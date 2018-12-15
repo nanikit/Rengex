@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   height="24"
+   version="1.1"
+   viewBox="0 0 25 24"
+   width="25"
+   id="svg824"
+   sodipodi:docname="if_icon-93-inbox-upload_314777.svg"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)">
+  <defs
+     id="defs1414" />
+  <metadata
+     id="metadata828">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     id="namedview826"
+     showgrid="false"
+     inkscape:zoom="26.53125"
+     inkscape:cx="7.0692431"
+     inkscape:cy="10.431095"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg824"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <path
+     style="fill:#157efb;fill-rule:evenodd;stroke:none;stroke-width:1"
+     d="m 12,2.0000001 -3.25,3.25 L 8,4.5000001 12.5,9.9999999e-8 17,4.5000001 l -0.75,0.75 -3.25,-3.25 V 13 H 12 Z M 17,15 h 6.775024 l -4.375,-6.9999999 H 14 v -1 h 6 L 25,15 v 1 8 H 0 V 15 L 5,7.0000001 h 6 v 0 1 H 5.5999756 L 1.2249756,15 H 8 v 2 c 0,1.104569 0.895858,2 1.997392,2 h 5.005216 C 16.105737,19 17,18.11227 17,17 Z"
+     id="inbox-upload"
+     inkscape:connector-curvature="0" />
+</svg>
