@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--This file is NOT compatible with Silverlight-->
+<Viewbox xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform">
+  <Canvas Name="svg1446" Width="25" Height="24">
+    <Canvas.RenderTransform>
+      <TranslateTransform X="0" Y="0"/>
+    </Canvas.RenderTransform>
+    <Canvas.Resources/>
+    <!--Unknown tag: metadata-->
+    <!--Unknown tag: sodipodi:namedview-->
+    <Canvas Name="Page1">
+      <Canvas.RenderTransform>
+        <TranslateTransform X="-4" Y="-4"/>
+      </Canvas.RenderTransform>
+      <Canvas Name="icon93inboxupload">
+        <Path xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Name="inboxupload" Fill="#FF157EFB" StrokeThickness="1">
+          <Path.Data>
+            <PathGeometry Figures="M 16 6 12.75 9.25 12 8.5 16.5 4 21 8.5 20.25 9.25 17 6 v 11 h -1 z m 5 13 h 6.775024 l -4.375 -7 H 18 v -1 h 6 l 5 8 v 1 8 H 4 v -9 l 5 -8 h 6 v 0 1 H 9.5999756 l -4.375 7 H 12 v 2 c 0 1.104569 0.895858 2 1.997392 2 h 5.005216 C 20.105737 23 21 22.11227 21 21 v -2 z" FillRule="EvenOdd"/>
+          </Path.Data>
+        </Path>
+      </Canvas>
+    </Canvas>
+  </Canvas>
+</Viewbox>
