@@ -222,7 +222,7 @@ namespace Rengex {
     private void ReflectDelta(FileSystemEventArgs fse) {
       switch (fse.ChangeType) {
       case WatcherChangeTypes.Changed:
-        if (RegionDict.TryGetValue(fse.FullPath, out Region region)) {
+        if (RegionDict.TryGetValue(fse.FullPath.ToLower(), out Region region)) {
           region.Value = ConfigBuilder.CreateFromFile(fse.FullPath);
         }
         else {
@@ -259,7 +259,7 @@ namespace Rengex {
     }
 
     private void RemoveRegion(string path) {
-      if (RegionDict.TryGetValue(path, out Region region)) {
+      if (RegionDict.TryGetValue(path.ToLower(), out Region region)) {
         region.Watcher?.Dispose();
         Regions.Remove(region);
         RegionDict.Remove(path);

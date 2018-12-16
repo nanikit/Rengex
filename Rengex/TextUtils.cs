@@ -7,15 +7,15 @@ using System.Text.RegularExpressions;
 namespace Rengex {
   public static class TextUtils {
     public const string ClassJap = ""
-      + @"\u2E80-\u2EFF" // 한,중,일 부수 보충
-      + @"\u3040-\u309F" // 히라가나
-      + @"\u30A0-\u30FF" // 가타카나
-      + @"\u31F0-\u31FF" // 가타카나 음성 확장
-      + @"\u31C0-\u31EF" // CJK Strokes
-      + @"\u3200-\u32FF" // Enclosed CJK Letters and Months
-      + @"\u3400-\u4DBF\u4E00-\u9FBF\uF900-\uFAFF" // CJK Unified ~
+      + @"\u2E80-\u2EFF" // 한,중,일 부수 보충, ⺀-⻿
+      + @"\u3040-\u309F" // 히라가나, ぀-ゟ
+      + @"\u30A0-\u30FF" // 가타카나, ゠-ヿ
+      + @"\u31F0-\u31FF" // 가타카나 음성 확장, ㇰ-ㇿ
+      + @"\u31C0-\u31EF" // CJK Strokes, ㇀-㇯
+      + @"\u3200-\u32FF" // Enclosed CJK Letters and Months, ㈀-㋿
+      + @"\u3400-\u4DBF\u4E00-\u9FBF\uF900-\uFAFF" // CJK Unified ~, 㐀-䶿一-龿豈-﫿
       //+ @"\uFF64-\uFF9F" // half-width katakana
-      + @"\uFF00-\uFF9F" // Full-width alphabet, half-width katakana
+      + @"\uFF00-\uFF9F" // Full-width alphabet, half-width katakana ,＀-ﾟ
       ;
 
     public static bool Match(this Regex rx, string input, int index, out Match m) {
