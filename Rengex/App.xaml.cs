@@ -17,7 +17,11 @@ namespace Rengex {
           LaunchWPF();
         }
         else {
-          new ConcurrentTransChild(args[0]).Serve().Wait();
+          int delay;
+          if (!int.TryParse(args[0], out delay)) {
+            delay = 200;
+          }
+          new ConcurrentTransChild(delay).Serve().Wait();
         }
       }
       catch (Exception e) {

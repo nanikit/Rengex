@@ -32,11 +32,11 @@ namespace Rengex {
       return WalkForSources(CwdDesignator.MetadataDirectory);
     }
 
-    private void ParallelForEach(Action<TranslationUnit> action) {
-      var po = new ParallelOptions() { MaxDegreeOfParallelism = WorkerCount };
-      Parallel.ForEach(Translations ?? FindTranslations(), po, t => {
+    private Task ParallelForEach(Func<TranslationUnit, Task> action) {
+      IEnumerable<TranslationUnit> translations = Translations ?? FindTranslations();
+      return translations.ForEachAsync(WorkerCount, async t => {
         try {
-          action(t);
+          await action(t).ConfigureAwait(false);
         }
         catch (Exception e) {
           OnError(t, e);
@@ -44,43 +44,46 @@ namespace Rengex {
       });
     }
 
-    public void ImportTranslation() {
-      ParallelForEach(translation => {
+
+    public Task ImportTranslation() {
+      return ParallelForEach(translation => {
         OnImport(translation);
         translation.ExtractSourceText();
         OnComplete(translation);
+        return Task.CompletedTask;
       });
     }
 
-    public void MachineTranslation() {
+    public async Task MachineTranslation() {
       var translator = new ConcurrentTranslator(WorkerCount);
-      ParallelForEach(translation => {
+      await ParallelForEach(async translation => {
         OnTranslation(translation);
-        translation.MachineTranslate(translator).Wait();
+        await translation.MachineTranslate(translator).ConfigureAwait(false);
         OnComplete(translation);
-      });
+      }).ConfigureAwait(false);
       translator.Dispose();
     }
 
-    public void ExportTranslation() {
-      ParallelForEach(translation => {
+    public Task ExportTranslation() {
+      return ParallelForEach(translation => {
         OnExport(translation);
         translation.BuildTranslation();
         OnComplete(translation);
+        return Task.CompletedTask;
       });
     }
 
-    public void OnestopTranslation() {
+    public async Task OnestopTranslation() {
       var translator = new ConcurrentTranslator(WorkerCount);
-      ParallelForEach(translation => {
+      await ParallelForEach(async translation => {
         OnImport(translation);
         translation.ExtractSourceText();
         OnTranslation(translation);
-        translation.MachineTranslate(translator).Wait();
+        await translation.MachineTranslate(translator).ConfigureAwait(false);
         OnExport(translation);
         translation.BuildTranslation();
         OnComplete(translation);
-      });
+      }).ConfigureAwait(false);
       translator.Dispose();
     }
   }

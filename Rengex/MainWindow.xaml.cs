@@ -193,7 +193,7 @@ namespace Rengex {
       if (Translator == null) {
         return;
       }
-      await Operate(Translator.ImportTranslation);
+      await Operate(() => Task.Run(() => Translator.ImportTranslation()));
     }
 
     private void UseAllImportedIfNotSelected() {
@@ -209,7 +209,7 @@ namespace Rengex {
 
     private async void OnExportClick(object sender, RoutedEventArgs e) {
       UseAllImportedIfNotSelected();
-      await Operate(Translator.ExportTranslation);
+      await Operate(() => Task.Run(() => Translator.ExportTranslation()));
     }
 
     private async void OnOnestopClick(object sender, RoutedEventArgs e) {
@@ -269,13 +269,13 @@ namespace Rengex {
       });
     }
 
-    private async Task Operate(Action action) {
+    private async Task Operate(Func<Task> task) {
       if (!Ongoing?.IsCompleted ?? false) {
         LogText("이미 작업 중입니다. 나중에 시도해주세요.\r\n");
         return;
       }
 
-      Ongoing = Task.Run(action);
+      Ongoing = task();
       try {
         await Ongoing;
         LogText("작업이 끝났습니다.\r\n");
