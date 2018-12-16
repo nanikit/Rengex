@@ -59,7 +59,6 @@ namespace Rengex {
     NamedPipeServerStream PipeServer;
 
     public ConcurrentTransParent(string pipeName = DefaultPipeName) {
-      PipeServer = new NamedPipeServerStream(pipeName, PipeDirection.InOut, Environment.ProcessorCount + 2);
       PipeName = pipeName;
     }
 
@@ -68,13 +67,14 @@ namespace Rengex {
         await SendTranslationWork(source).ConfigureAwait(false);
         return await ReceiveTranslation().ConfigureAwait(false);
       }
-      finally {
+      catch (Exception e) {
         MsInitDelay += 500;
+        throw e;
       }
     }
 
     private async Task SendTranslationWork(string script) {
-      if (!PipeServer.IsConnected) {
+      if (!PipeServer?.IsConnected ?? true) {
         await InitializeChild().ConfigureAwait(false);
       }
       await PipeServer.WriteObjAsync(script).ConfigureAwait(false);
@@ -82,7 +82,8 @@ namespace Rengex {
 
     private async Task InitializeChild() {
       string path = Process.GetCurrentProcess().MainModule.FileName;
-      DisposeChild();
+      Dispose();
+      PipeServer = new NamedPipeServerStream(PipeName, PipeDirection.InOut, Environment.ProcessorCount + 2);
       Child = Process.Start(path, MsInitDelay.ToString());
       Task connection = PipeServer.WaitForConnectionAsync();
       Task fin = await Task.WhenAny(connection, Task.Delay(5000)).ConfigureAwait(false);
@@ -104,14 +105,18 @@ namespace Rengex {
 
     protected virtual void Dispose(bool disposing) {
       if (disposing) {
-        if (PipeServer != null) {
-          if (PipeServer.IsConnected) {
-            PipeServer.WriteObjAsync(false).Wait(5000);
-          }
-          PipeServer.Dispose();
-          PipeServer = null;
-        }
+        DisposePipe();
         DisposeChild();
+      }
+    }
+
+    private void DisposePipe() {
+      if (PipeServer != null) {
+        if (PipeServer.IsConnected) {
+          PipeServer.WriteObjAsync(false).Wait(5000);
+        }
+        PipeServer.Dispose();
+        PipeServer = null;
       }
     }
 
