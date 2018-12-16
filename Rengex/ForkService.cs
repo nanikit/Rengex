@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,18 +14,23 @@ namespace Rengex {
   }
 
   public class ConcurrentTransChild {
-    NamedPipeClientStream PipeClient;
+    int MsDelay;
     ITranslator Translator;
+    NamedPipeClientStream PipeClient;
 
-    public ConcurrentTransChild(string pipeName) {
+    public ConcurrentTransChild(int msDelay, string pipeName = ConcurrentTransParent.DefaultPipeName) {
+      MsDelay = msDelay;
       PipeClient = new NamedPipeClientStream(".", pipeName);
     }
 
     public async Task Serve() {
-      await PipeClient.ConnectAsync().ConfigureAwait(false);
+      await PipeClient.ConnectAsync(5000).ConfigureAwait(false);
       try {
+        if (!PipeClient.IsConnected) {
+          return;
+        }
         if (Translator == null) {
-          Translator = new ConcurrentTransSelf();
+          Translator = new ConcurrentTransSelf(MsDelay);
         }
         while (true) {
           object src = await PipeClient.ReadObjAsync<object>().ConfigureAwait(false);
@@ -41,17 +48,29 @@ namespace Rengex {
   }
 
   public class ConcurrentTransParent : IDisposable, ITranslator {
+    public const string DefaultPipeName = "rengex_subtrans";
+
+    /// <summary>
+    /// Ehnd에서 크래시가 나는 경우가 있는데 견고한 방법을 찾지 못함.
+    /// </summary>
+    int MsInitDelay = 200;
+    Process Child;
     string PipeName;
     NamedPipeServerStream PipeServer;
 
-    public ConcurrentTransParent(string pipeName = "asdf") {
+    public ConcurrentTransParent(string pipeName = DefaultPipeName) {
       PipeServer = new NamedPipeServerStream(pipeName, PipeDirection.InOut, Environment.ProcessorCount + 2);
       PipeName = pipeName;
     }
 
     public async Task<string> Translate(string source) {
-      await SendTranslationWork(source).ConfigureAwait(false);
-      return await ReceiveTranslation().ConfigureAwait(false);
+      try {
+        await SendTranslationWork(source).ConfigureAwait(false);
+        return await ReceiveTranslation().ConfigureAwait(false);
+      }
+      finally {
+        MsInitDelay += 500;
+      }
     }
 
     private async Task SendTranslationWork(string script) {
@@ -63,12 +82,13 @@ namespace Rengex {
 
     private async Task InitializeChild() {
       string path = Process.GetCurrentProcess().MainModule.FileName;
-      Process child = Process.Start(path, PipeName);
+      DisposeChild();
+      Child = Process.Start(path, MsInitDelay.ToString());
       Task connection = PipeServer.WaitForConnectionAsync();
       Task fin = await Task.WhenAny(connection, Task.Delay(5000)).ConfigureAwait(false);
       if (fin != connection) {
-        if (!child.HasExited) {
-          child.Kill();
+        if (!Child.HasExited) {
+          Child.Kill();
         }
         throw new ApplicationException("서브 프로세스가 응답하지 않습니다.");
       }
@@ -91,6 +111,16 @@ namespace Rengex {
           PipeServer.Dispose();
           PipeServer = null;
         }
+        DisposeChild();
+      }
+    }
+
+    private void DisposeChild() {
+      if (Child != null) {
+        if (!Child.HasExited) {
+          Child.Kill();
+        }
+        Child.Dispose();
       }
     }
   }
@@ -98,13 +128,13 @@ namespace Rengex {
   sealed class ConcurrentTransSelf : ITranslator {
     private static EzTransXp Instance;
 
-    public ConcurrentTransSelf() {
+    public ConcurrentTransSelf(int msDelay = 200) {
       if (Instance != null) {
         return;
       }
       try {
         string cfgEzt = Properties.Settings.Default.EzTransDir;
-        Instance = new EzTransXp(cfgEzt);
+        Instance = new EzTransXp(cfgEzt, msDelay);
       }
       catch (Exception e) {
         Properties.Settings.Default.EzTransDir = null;
@@ -120,23 +150,16 @@ namespace Rengex {
   }
 
   class ConcurrentTranslator : ITranslator {
+    int PoolSize;
     Task ManagerTask;
-    Task[] TranslationTasks;
-    ITranslator[] Translators;
+    List<Task> Workers = new List<Task>();
+    List<ITranslator> Translators = new List<ITranslator>();
     MyBufferBlock<Job> Jobs = new MyBufferBlock<Job>();
     CancellationTokenSource Cancel = new CancellationTokenSource();
 
     public ConcurrentTranslator(int poolSize) {
-      poolSize = Math.Max(1, poolSize);
-      Translators = new ITranslator[poolSize];
-      TranslationTasks = new Task[poolSize];
+      PoolSize = Math.Max(1, poolSize);
       ManagerTask = Task.Run(() => Manager());
-    }
-
-    private void ForkChild(int i) {
-      var translator = new ConcurrentTransParent();
-      Translators[i] = translator;
-      TranslationTasks[i] = Task.Run(() => Worker(translator));
     }
 
     public Task<string> Translate(string source) {
@@ -145,45 +168,95 @@ namespace Rengex {
       return job.Client.Task;
     }
 
-    private async Task Worker(ITranslator translator) {
-      Job job = null;
+    private async Task Worker(ITranslator translator, Job job) {
       try {
-        while (true) {
-          Task<Job> getJob = Jobs.ReceiveAsync(Cancel.Token);
-          Task guard = await Task.WhenAny(getJob).ConfigureAwait(false);
-          if (getJob.IsCanceled) {
-            break;
-          }
-          job = await getJob.ConfigureAwait(false);
-          string res = await translator.Translate(job.Source).ConfigureAwait(false);
-          job.Client.TrySetResult(res);
-          job = null;
-        }
+        string res = await translator.Translate(job.Source).ConfigureAwait(false);
+        job.Client.TrySetResult(res);
       }
       catch (Exception e) {
-        if (job != null) {
-          Jobs.Enqueue(job);
-        }
+        Jobs.Enqueue(job);
         throw e;
-      }
-      finally {
-        translator.Dispose();
       }
     }
 
     private async Task Manager() {
-      Translators[0] = new ConcurrentTransSelf();
-      TranslationTasks[0] = Task.Run(() => Worker(Translators[0]));
-      for (int i = 1; i < TranslationTasks.Length; i++) {
-        ForkChild(i);
-      }
       while (!Cancel?.IsCancellationRequested ?? false) {
-        Task t = await Task.WhenAny(TranslationTasks).ConfigureAwait(false);
-        int idx = Array.IndexOf(TranslationTasks, t);
-        if (TranslationTasks[idx].IsFaulted) {
-          ForkChild(idx);
+        ReflectPoolSize();
+        Job job = await GetJobOrDefault().ConfigureAwait(false);
+        if (job == null) {
+          break;
+        }
+        await Schedule(job).ConfigureAwait(false);
+      }
+      foreach (ITranslator translator in Translators) {
+        translator.Dispose();
+      }
+    }
+
+    private void ReflectPoolSize() {
+      if (Translators.Count == PoolSize) {
+        return;
+      }
+      else if (Translators.Count < PoolSize) {
+        if (Translators.Count == 0) {
+          Translators.Add(new ConcurrentTransSelf());
+        }
+        for (int i = 1; i < PoolSize; i++) {
+          Translators.Add(new ConcurrentTransParent());
         }
       }
+      else if (Translators.Count > PoolSize) {
+        Translators.RemoveRange(PoolSize, Translators.Count - PoolSize);
+        if (Workers.Count > PoolSize) {
+          Workers.RemoveRange(PoolSize, Workers.Count - PoolSize);
+        }
+      }
+    }
+
+    private async Task<Job> GetJobOrDefault() {
+      Task<Job> dispatch = Jobs.ReceiveAsync(Cancel.Token);
+      Task t = await Task.WhenAny(dispatch).ConfigureAwait(false);
+      if (Cancel?.IsCancellationRequested ?? true) {
+        return null;
+      }
+      Job job = await dispatch.ConfigureAwait(false);
+      return job;
+    }
+
+    private async Task Schedule(Job job) {
+      if (ScheduleAtCompleted(job) || ScheduleWithMoreWorker(job)) {
+        return;
+      }
+      await ScheduleAfterCompletion(job).ConfigureAwait(false);
+    }
+
+    private bool ScheduleWithMoreWorker(Job job) {
+      if (Workers.Count < Translators.Count) {
+        Workers.Add(Worker(Translators[Workers.Count], job));
+        return true;
+      }
+      return false;
+    }
+
+    private async Task ScheduleAfterCompletion(Job job) {
+      Task abort = Task.Delay(TimeSpan.FromDays(10), Cancel.Token);
+      Task<Task> seats = Task.WhenAny(Workers.ToArray());
+      Task fin = await Task.WhenAny(abort, seats).ConfigureAwait(false);
+      if (fin == abort) {
+        return;
+      }
+      Task vacant = await seats.ConfigureAwait(false);
+      int endedIdx = Workers.IndexOf(vacant);
+      Workers[endedIdx] = Worker(Translators[endedIdx], job);
+    }
+
+    private bool ScheduleAtCompleted(Job job) {
+      int endedIdx = Workers.FindIndex(x => x.IsCompleted);
+      if (endedIdx != -1) {
+        Workers[endedIdx] = Worker(Translators[endedIdx], job);
+        return true;
+      }
+      return false;
     }
 
     public void Dispose() {

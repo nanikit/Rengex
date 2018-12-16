@@ -19,19 +19,19 @@ namespace Rengex {
       new Regex(@"~x([0-9A-F]{4})>|~X([0-9A-F]{4})([0-9A-F]{3})>|.[^~]*", RegexOptions.Compiled);
 
     private IntPtr EzTransDll;
-    private J2K_TranslateMMNTW J2kMmntw;
     private J2K_FreeMem J2kFree;
-    private EncodingTester Sjis = new EncodingTester(932);
+    private J2K_TranslateMMNTW J2kMmntw;
+    private readonly EncodingTester Sjis = new EncodingTester(932);
 
-    public EzTransXp(string eztPath) {
+    public EzTransXp(string eztPath, int msDelay = 200) {
       if (string.IsNullOrWhiteSpace(eztPath)) {
         eztPath = GetEztransPathFromReg();
       }
       if (eztPath == null) {
         throw new EzTransNotFoundException();
       }
-      for (int i = 0; i < 3; i++) {
-        LoadNativeDll(eztPath);
+      for (int i = 0; i < 1; i++) {
+        LoadNativeDll(eztPath, msDelay);
         if (IsEhndEnabled()) {
           return;
         }
@@ -41,7 +41,7 @@ namespace Rengex {
     }
 
     private bool IsEhndEnabled() {
-      for (int i = 0; i < 5; i++) {
+      for (int i = 0; i < 3; i++) {
         string chk = Translate("蜜ドル辞典");
         if (chk != null && chk.Contains("OK")) {
           return true;
@@ -56,7 +56,7 @@ namespace Rengex {
       return key.GetValue(@"Software\ChangShin\ezTrans\FilePath") as string;
     }
 
-    private void LoadNativeDll(string eztPath) {
+    private void LoadNativeDll(string eztPath, int msDelay) {
       EzTransDll = LoadLibrary(Path.Combine(eztPath, "J2KEngine.dll"));
       if (EzTransDll == IntPtr.Zero) {
         int errorCode = Marshal.GetLastWin32Error();
@@ -71,8 +71,8 @@ namespace Rengex {
       J2kFree = Marshal.GetDelegateForFunctionPointer<J2K_FreeMem>(addr);
       addr = GetProcAddress(EzTransDll, "J2K_InitializeEx");
       var initEx = Marshal.GetDelegateForFunctionPointer<J2K_InitializeEx>(addr);
+      Thread.Sleep(msDelay);
       string key = Path.Combine(eztPath, "Dat");
-      Thread.Sleep(50);
       if (!initEx("CSUSER123455", key)) {
         throw new Exception("엔진 초기화에 실패했습니다.");
       }
