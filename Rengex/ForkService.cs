@@ -165,6 +165,7 @@ namespace Rengex {
     public ConcurrentTranslator(int poolSize) {
       PoolSize = Math.Max(1, poolSize);
       ManagerTask = Task.Run(() => Manager());
+      Translators.Add(new ConcurrentTransSelf());
     }
 
     public Task<string> Translate(string source) {
@@ -203,15 +204,12 @@ namespace Rengex {
         return;
       }
       else if (Translators.Count < PoolSize) {
-        if (Translators.Count == 0) {
-          Translators.Add(new ConcurrentTransSelf());
-        }
         for (int i = 1; i < PoolSize; i++) {
           Translators.Add(new ConcurrentTransParent());
         }
       }
       else if (Translators.Count > PoolSize) {
-        Translators.RemoveRange(PoolSize, Translators.Count - PoolSize);
+        Translators.RemoveRange(Math.Max(1, PoolSize), Translators.Count - PoolSize);
         if (Workers.Count > PoolSize) {
           Workers.RemoveRange(PoolSize, Workers.Count - PoolSize);
         }
