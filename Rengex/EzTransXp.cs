@@ -107,7 +107,7 @@ namespace Rengex {
           return true;
         }
         FlushEscapedWhitespace(c, buffer);
-        if (c != '\r' && c != '\n' && char.IsWhiteSpace(c)) {
+        if (c == '─' || c != '\r' && c != '\n' && char.IsWhiteSpace(c)) {
           Space = c;
           Count = 1;
           return true;
