@@ -1,17 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.IO.Pipes;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Rengex {
-
-  public interface ITranslator : IDisposable {
-    Task<string> Translate(string source);
-  }
 
   public class ConcurrentTransChild {
     int MsDelay;
@@ -47,7 +41,7 @@ namespace Rengex {
     }
   }
 
-  public class ConcurrentTransParent : IDisposable, ITranslator {
+  public class ConcurrentTransParent : ITranslator {
     public const string DefaultPipeName = "rengex_subtrans";
 
     /// <summary>
@@ -164,8 +158,8 @@ namespace Rengex {
 
     public ConcurrentTranslator(int poolSize) {
       PoolSize = Math.Max(1, poolSize);
-      ManagerTask = Task.Run(() => Manager());
       Translators.Add(new ConcurrentTransSelf());
+      ManagerTask = Task.Run(() => Manager());
     }
 
     public Task<string> Translate(string source) {
