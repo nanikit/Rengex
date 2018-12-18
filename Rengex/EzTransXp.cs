@@ -1,22 +1,27 @@
 ﻿using Microsoft.Win32;
 using System;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
+using System.Threading.Tasks;
 
 namespace Rengex {
+
+  public interface ITranslator : IDisposable {
+    Task<string> Translate(string source);
+  }
 
   public class EzTransNotFoundException : ApplicationException {
     public override string Message => "이지트랜스를 찾지 못했습니다.";
   }
 
-  public class EzTransXp : IDisposable {
+  public class EzTransXp : ITranslator {
 
     private static readonly Regex RxDecode =
       new Regex(@"~x([0-9A-F]{4})>|~X([0-9A-F]{4})([0-9A-F]{3})>|.[^~]*", RegexOptions.Compiled);
+
+    public readonly Task InitDll;
 
     private IntPtr EzTransDll;
     private J2K_FreeMem J2kFree;
@@ -30,25 +35,12 @@ namespace Rengex {
       if (eztPath == null) {
         throw new EzTransNotFoundException();
       }
-      for (int i = 0; i < 1; i++) {
-        LoadNativeDll(eztPath, msDelay);
-        if (IsEhndEnabled()) {
-          return;
-        }
-        Dispose();
-      }
-      throw new Exception("꿀도르 사전이 감지되지 않습니다.");
+      InitDll = LoadNativeDll(eztPath, msDelay);
     }
 
-    private bool IsEhndEnabled() {
-      for (int i = 0; i < 3; i++) {
-        string chk = Translate("蜜ドル辞典");
-        if (chk != null && chk.Contains("OK")) {
-          return true;
-        }
-        Thread.Sleep(200);
-      }
-      return false;
+    public async Task<bool> IsHdorEnabled() {
+      string chk = await Translate("蜜ドル辞典").ConfigureAwait(false);
+      return chk?.Contains("OK") ?? false;
     }
 
     public static string GetEztransPathFromReg() {
@@ -56,7 +48,7 @@ namespace Rengex {
       return key.GetValue(@"Software\ChangShin\ezTrans\FilePath") as string;
     }
 
-    private void LoadNativeDll(string eztPath, int msDelay) {
+    private async Task LoadNativeDll(string eztPath, int msDelay) {
       EzTransDll = LoadLibrary(Path.Combine(eztPath, "J2KEngine.dll"));
       if (EzTransDll == IntPtr.Zero) {
         int errorCode = Marshal.GetLastWin32Error();
@@ -71,17 +63,14 @@ namespace Rengex {
       J2kFree = Marshal.GetDelegateForFunctionPointer<J2K_FreeMem>(addr);
       addr = GetProcAddress(EzTransDll, "J2K_InitializeEx");
       var initEx = Marshal.GetDelegateForFunctionPointer<J2K_InitializeEx>(addr);
-      Thread.Sleep(msDelay);
+      await Task.Delay(msDelay).ConfigureAwait(false);
       string key = Path.Combine(eztPath, "Dat");
       if (!initEx("CSUSER123455", key)) {
         throw new Exception("엔진 초기화에 실패했습니다.");
       }
     }
 
-    public string Translate(string jpStr) {
-      if (J2kMmntw == null) {
-        return null;
-      }
+    private string TranslateInternal(string jpStr) {
       var sb = new StringBuilder();
       string e = Escape(jpStr, sb);
       IntPtr p = J2kMmntw(0, e);
@@ -92,6 +81,11 @@ namespace Rengex {
       J2kFree(p);
       string ue = ret == null ? null : Unescape(ret, sb);
       return ue;
+    }
+
+    public async Task<string> Translate(string jpStr) {
+      await InitDll.ConfigureAwait(false);
+      return TranslateInternal(jpStr);
     }
 
     /// <summary>
@@ -197,20 +191,12 @@ namespace Rengex {
     }
 
     protected void Dispose(bool disposing) {
-      if (EzTransDll == IntPtr.Zero) {
-        return;
-      }
-      FreeLibrary(EzTransDll);
-      EzTransDll = IntPtr.Zero;
+      // 원래 FreeLibrary를 호출하려 했는데 그러면 Access violation이 뜬다.
     }
 
     #region PInvoke
     [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     private static extern IntPtr LoadLibrary(string libname);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool FreeLibrary(IntPtr hModule);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Ansi)]
     private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
