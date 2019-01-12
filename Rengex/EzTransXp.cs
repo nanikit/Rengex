@@ -101,12 +101,23 @@ namespace Rengex {
           return true;
         }
         FlushEscapedWhitespace(c, buffer);
-        if (c == '─' || c != '\r' && c != '\n' && char.IsWhiteSpace(c)) {
+        if (IsMutableChar(c) || IsSpaceExceptNewline(c)) {
           Space = c;
           Count = 1;
           return true;
         }
         return false;
+      }
+
+      /// <summary>
+      /// 연속된 상태로 꿀도르를 통과했을 때 변형 가능성이 있는 문자를 거름.
+      /// </summary>
+      private static bool IsMutableChar(char c) {
+        return c == '─' || c == '#';
+      }
+
+      private static bool IsSpaceExceptNewline(char c) {
+        return c != '\r' && c != '\n' && char.IsWhiteSpace(c);
       }
 
       /// <summary>
