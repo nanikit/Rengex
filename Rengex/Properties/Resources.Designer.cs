@@ -61,7 +61,7 @@ namespace Rengex.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to 2018-12-16 
+        ///   Looks up a localized string similar to 2019-01-13 
         ///.
         /// </summary>
         internal static string BuildDate {
@@ -76,7 +76,7 @@ namespace Rengex.Properties {
         ///# 닷넷 정규식 문법 URL: https://docs.microsoft.com/ko-kr/dotnet/standard/base-types/regular-expression-language-quick-reference
         ///# 정규식 테스트 URL: https://regex101.com/r/IQeg4l/1
         ///
-        ///(?&lt;name&gt;[^ ]*)
+        ///(?&lt;name&gt;[^\0]*)
         ///.
         /// </summary>
         internal static string DefaultMatch {
