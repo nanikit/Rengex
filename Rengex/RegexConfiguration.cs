@@ -202,9 +202,21 @@ namespace Rengex {
     }
 
     class ReplacePattern {
-      public Regex Original;
-      public string Replace;
-      public bool Extended;
+      public readonly Regex Original;
+      public readonly string Replace;
+      public readonly bool Extended;
+
+      public ReplacePattern(string pat, string replace) {
+        if (pat.StartsWith("(?:)")) {
+          Extended = true;
+          pat = pat.Substring(4);
+        }
+
+        pat = pat.Replace(@"\jp", TextUtils.ClassJap);
+        Original = new Regex(pat, RegexOptions.None, TimeSpan.FromSeconds(10));
+
+        Replace = replace == "$" ? "" : Regex.Unescape(replace);
+      }
     }
 
     class PreprocessPattern : Replacer {
@@ -287,7 +299,7 @@ namespace Rengex {
 
     public ReplaceConfig(string replaceConfigPath) {
       FullPath = Path.GetFullPath(replaceConfigPath);
-      Replacers = LoadConfig(replaceConfigPath);
+      Replacers = new ReplaceConfigLoader(this).Rules;
     }
 
     /// <summary>
@@ -327,44 +339,75 @@ namespace Rengex {
       return ret;
     }
 
-    private List<Replacer> LoadConfig(string replaceConfigPath) {
-      var rules = new List<Replacer>();
-      string[] lines = File.ReadAllLines(replaceConfigPath);
-      var rp = new ReplacePattern();
-      bool isPrePattern = false;
-      foreach (string line in lines) {
-        if (string.IsNullOrWhiteSpace(line) || line[0] == '#') {
-          continue;
-        }
-        if (line[0] == '*') {
-          var import = new Import(this, line.Substring(1));
-          if (!File.Exists(import.FullPath)) {
-            throw new ApplicationException($"참조 파일이 존재하지 않습니다: {import.FullPath}");
+    class ReplaceConfigLoader {
+      public readonly ReplaceConfig ReplaceConfig;
+      public readonly List<Replacer> Rules;
+
+      IEnumerator<string> Line;
+
+      public ReplaceConfigLoader(ReplaceConfig config) {
+        ReplaceConfig = config;
+        Rules = LoadConfig();
+      }
+
+      private List<Replacer> LoadConfig() {
+        string[] lines = File.ReadAllLines(ReplaceConfig.FullPath);
+        Line = lines.AsEnumerable().GetEnumerator();
+
+        var rules = new List<Replacer>();
+        while (Line.MoveNext()) {
+          if (IsCommentLine(Line.Current)) {
+            continue;
           }
-          rules.Add(import);
-          continue;
-        }
-        if (rp.Original == null) {
-          string pat = line.Replace(@"\jp", TextUtils.ClassJap);
-          if (pat.StartsWith("(?=)")) {
-            isPrePattern = true;
-            pat = pat.Substring(4);
+          else if (ReadImportLine(out Import import)) {
+            rules.Add(import);
           }
-          if (pat.StartsWith("(?:)")) {
-            rp.Extended = true;
-            pat = pat.Substring(4);
+          else {
+            Replacer rule = ReadPatternLines();
+            rules.Add(rule);
           }
-          rp.Original = new Regex(pat, RegexOptions.None, TimeSpan.FromSeconds(10));
         }
-        else {
-          rp.Replace = line == "$" ? "" : line.Replace(@"\jp", TextUtils.ClassJap);
-          var rule = isPrePattern ? new PreprocessPattern(rp) as Replacer : new PostprocessPattern(rp);
-          rules.Add(rule);
-          rp = new ReplacePattern();
-          isPrePattern = false;
+        return rules;
+      }
+
+      private static bool IsCommentLine(string line) {
+        return string.IsNullOrWhiteSpace(line) || line[0] == '#';
+      }
+
+      private bool ReadImportLine(out Import import) {
+        string line = Line.Current;
+        if (line[0] != '*') {
+          import = null;
+          return false;
+        }
+        import = new Import(ReplaceConfig, line.Substring(1));
+        if (!File.Exists(import.FullPath)) {
+          throw new ApplicationException($"참조 파일이 존재하지 않습니다: {import.FullPath}");
+        }
+        return true;
+      }
+
+      private Replacer ReadPatternLines() {
+        string patLine = Line.Current;
+        ExpectReplaceLine(patLine);
+
+        bool isPrePattern = patLine.StartsWith("(?=)");
+        string pat = isPrePattern ? patLine.Substring(4) : patLine;
+        var rp = new ReplacePattern(pat, Line.Current);
+        var rule = isPrePattern
+          ? new PreprocessPattern(rp) as Replacer
+          : new PostprocessPattern(rp);
+        return rule;
+      }
+
+      private void ExpectReplaceLine(string patLine) {
+        while (Line.MoveNext() && IsCommentLine(Line.Current)) { }
+
+        if (Line.Current == null) {
+          string fileName = Path.GetFileName(ReplaceConfig.FullPath);
+          throw new ApplicationException($"치환할 문자열이 없습니다: {fileName}\n{patLine}");
         }
       }
-      return rules;
     }
 
     public ReplaceConfig CreateFromFile(string path) {
