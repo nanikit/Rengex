@@ -2,17 +2,18 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Rengex {
 
-  public class ConcurrentTransChild {
+  public class ChildForkTranslator {
     int MsDelay;
     ITranslator Translator;
     NamedPipeClientStream PipeClient;
 
-    public ConcurrentTransChild(int msDelay, string pipeName = ConcurrentTransParent.DefaultPipeName) {
+    public ChildForkTranslator(int msDelay, string pipeName = ParentForkTranslator.DefaultPipeName) {
       MsDelay = msDelay;
       PipeClient = new NamedPipeClientStream(".", pipeName);
     }
@@ -24,7 +25,7 @@ namespace Rengex {
           return;
         }
         if (Translator == null) {
-          Translator = new ConcurrentTransSelf(MsDelay);
+          Translator = new SelfTranslator(MsDelay);
         }
         while (true) {
           object src = await PipeClient.ReadObjAsync<object>().ConfigureAwait(false);
@@ -41,7 +42,7 @@ namespace Rengex {
     }
   }
 
-  public class ConcurrentTransParent : ITranslator {
+  public class ParentForkTranslator : ITranslator {
     public const string DefaultPipeName = "rengex_subtrans";
 
     /// <summary>
@@ -52,7 +53,7 @@ namespace Rengex {
     string PipeName;
     NamedPipeServerStream PipeServer;
 
-    public ConcurrentTransParent(string pipeName = DefaultPipeName) {
+    public ParentForkTranslator(string pipeName = DefaultPipeName) {
       PipeName = pipeName;
     }
 
@@ -124,10 +125,10 @@ namespace Rengex {
     }
   }
 
-  sealed class ConcurrentTransSelf : ITranslator {
+  sealed class SelfTranslator : ITranslator {
     private static EzTransXp Instance;
 
-    public ConcurrentTransSelf(int msDelay = 200) {
+    public SelfTranslator(int msDelay = 200) {
       if (Instance != null) {
         return;
       }
@@ -148,7 +149,7 @@ namespace Rengex {
     public void Dispose() { }
   }
 
-  class ConcurrentTranslator : ITranslator {
+  class ForkTranslator : ITranslator {
     int PoolSize;
     Task ManagerTask;
     List<Task> Workers = new List<Task>();
@@ -156,9 +157,9 @@ namespace Rengex {
     MyBufferBlock<Job> Jobs = new MyBufferBlock<Job>();
     CancellationTokenSource Cancel = new CancellationTokenSource();
 
-    public ConcurrentTranslator(int poolSize) {
+    public ForkTranslator(int poolSize) {
       PoolSize = Math.Max(1, poolSize);
-      Translators.Add(new ConcurrentTransSelf());
+      Translators.Add(new SelfTranslator());
       ManagerTask = Task.Run(() => Manager());
     }
 
@@ -199,7 +200,7 @@ namespace Rengex {
       }
       else if (Translators.Count < PoolSize) {
         for (int i = 1; i < PoolSize; i++) {
-          Translators.Add(new ConcurrentTransParent());
+          Translators.Add(new ParentForkTranslator());
         }
       }
       else if (Translators.Count > PoolSize) {
@@ -277,6 +278,60 @@ namespace Rengex {
 
       public TaskCompletionSource<string> Client = new TaskCompletionSource<string>();
       public string Source;
+    }
+  }
+
+  public class SplitTranslater : ITranslator {
+
+    private static IEnumerable<string> ChunkByLines(string source) {
+      int startIdx = 0;
+      int endIdx = 0;
+      while (true) {
+        if (endIdx >= source.Length) {
+          yield return source.Substring(startIdx, endIdx - startIdx);
+          break;
+        }
+        if (source[endIdx] == '\n') {
+          int len = endIdx - startIdx + 1;
+          if (len > 2000) {
+            yield return source.Substring(startIdx, len);
+            startIdx = endIdx + 1;
+          }
+        }
+        endIdx++;
+      }
+    }
+
+    private ITranslator Backend;
+
+    public SplitTranslater(ITranslator translator) {
+      Backend = translator;
+    }
+
+    public Task<string> Translate(string source) {
+      return Translate(source, null);
+    }
+
+    public async Task<string> Translate(string source, IProgress<int> progress) {
+      List<string> splits = ChunkByLines(source).ToList();
+      List<Task<string>> splitTasks = splits.Select(x => Backend.Translate(x)).ToList();
+      var runnings = new List<Task<string>>(splitTasks);
+      int translatedLength = 0;
+
+      while (runnings.Count != 0) {
+        Task<string> done = await Task.WhenAny(runnings).ConfigureAwait(false);
+        runnings.Remove(done);
+
+        int doneIdx = splitTasks.IndexOf(done);
+        translatedLength += splits[doneIdx].Length;
+        progress?.Report(translatedLength);
+      }
+
+      return string.Join("", splitTasks.Select(x => x.Result));
+    }
+
+    public void Dispose() {
+      Backend.Dispose();
     }
   }
 }

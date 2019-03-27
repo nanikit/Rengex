@@ -55,7 +55,7 @@ namespace Rengex {
     }
 
     public async Task MachineTranslation() {
-      var translator = new ConcurrentTranslator(WorkerCount);
+      var translator = new ForkTranslator(WorkerCount);
       await ParallelForEach(async translation => {
         OnTranslation(translation);
         await translation.MachineTranslate(translator).ConfigureAwait(false);
@@ -74,7 +74,7 @@ namespace Rengex {
     }
 
     public async Task OnestopTranslation() {
-      var translator = new ConcurrentTranslator(WorkerCount);
+      var translator = new ForkTranslator(WorkerCount);
       await ParallelForEach(async translation => {
         OnImport(translation);
         translation.ExtractSourceText();

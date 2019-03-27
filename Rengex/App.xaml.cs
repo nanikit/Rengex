@@ -21,7 +21,7 @@ namespace Rengex {
           if (!int.TryParse(args[0], out delay)) {
             delay = 200;
           }
-          new ConcurrentTransChild(delay).Serve().Wait();
+          new ChildForkTranslator(delay).Serve().Wait();
         }
       }
       catch (Exception e) {

@@ -67,7 +67,7 @@ namespace Rengex {
     }
 
     public void MachineTranslate() {
-      MachineTranslate(new ConcurrentTransSelf()).Wait();
+      MachineTranslate(new SelfTranslator()).Wait();
     }
 
     public void BuildTranslation() {
