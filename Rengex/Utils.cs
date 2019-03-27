@@ -27,13 +27,18 @@ namespace Rengex {
   }
 
   public class MyBufferBlock<T> {
+
+    private class Client {
+      public TaskCompletionSource<T> Waiting;
+      public CancellationTokenRegistration Cancelling;
+    }
+
     private ConcurrentQueue<T> DataQueue = new ConcurrentQueue<T>();
-    private ConcurrentQueue<TaskCompletionSource<T>> Workers =
-      new ConcurrentQueue<TaskCompletionSource<T>>();
+    private ConcurrentQueue<Client> Clients = new ConcurrentQueue<Client>();
 
     public int PendingSize => DataQueue.Count;
 
-    public int HungerSize => Workers.Count;
+    public int HungerSize => Clients.Count;
 
     public Task<T> ReceiveAsync() {
       return ReceiveAsync(CancellationToken.None);
@@ -45,22 +50,27 @@ namespace Rengex {
         ret.SetResult(res);
       }
       else {
-        Workers.Enqueue(ret);
-        token.Register(new Action(() => ret.TrySetCanceled(token)));
+        CancellationTokenRegistration c;
+        c = token.Register(() => ret.TrySetCanceled(token));
+        Clients.Enqueue(new Client { Waiting = ret, Cancelling = c });
       }
       return ret.Task;
     }
 
     public void Enqueue(T value) {
-      while (Workers.TryDequeue(out TaskCompletionSource<T> worker)) {
-        if (worker.TrySetResult(value)) return;
+      while (Clients.TryDequeue(out Client client)) {
+        client.Cancelling.Dispose();
+        if (client.Waiting.TrySetResult(value)) {
+          return;
+        }
       }
       DataQueue.Enqueue(value);
     }
 
     public void Abort() {
-      while (Workers.TryDequeue(out TaskCompletionSource<T> worker)) {
-        worker.SetException(new TaskCanceledException());
+      while (Clients.TryDequeue(out Client client)) {
+        client.Cancelling.Dispose();
+        client.Waiting.TrySetCanceled();
       }
     }
   }
