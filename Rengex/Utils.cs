@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Rengex {
-  public static class Utils {
+  public static class Util {
     public static string PrecreateDirectory(string path) {
       Directory.CreateDirectory(Path.GetDirectoryName(path));
       return path;
@@ -23,6 +25,19 @@ namespace Rengex {
         }
       }));
       return Task.WhenAll(tasks);
+    }
+  }
+
+  public class ViewModelBase : INotifyPropertyChanged {
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    protected void Set<T>(ref T member, T value, [CallerMemberName] string name = null) {
+      if (member.Equals(value)) {
+        return;
+      }
+      member = value;
+      var ev = new PropertyChangedEventArgs(name);
+      PropertyChanged?.Invoke(this, ev);
     }
   }
 

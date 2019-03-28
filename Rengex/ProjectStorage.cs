@@ -172,7 +172,7 @@ namespace Rengex {
 
     private void CopyToSourceDirectory(string path) {
       if (!File.Exists(SourcePath)) {
-        Utils.PrecreateDirectory(SourcePath);
+        Util.PrecreateDirectory(SourcePath);
         File.Copy(path, SourcePath, true);
       }
     }

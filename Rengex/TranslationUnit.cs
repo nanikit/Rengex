@@ -7,13 +7,19 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Rengex {
-  public class TranslationUnit {
+  interface JpToKrable {
+    void ExtractSourceText();
+    Task MachineTranslate(ITranslator translator);
+    void BuildTranslation();
+  }
+
+  public class TranslationUnit : JpToKrable {
 
     static UTF8Encoding UTF8WithBom = new UTF8Encoding(true);
 
     public readonly IProjectStorage Workspace;
     public readonly RegexDotConfiguration DotConfig;
-    RegexConfiguration Config;
+    private RegexConfiguration Config;
 
     public TranslationUnit(RegexDotConfiguration dot, IProjectStorage workspace) {
       DotConfig = dot;
@@ -72,7 +78,7 @@ namespace Rengex {
 
     public void BuildTranslation() {
       string translation = GetAlternativeTranslationIfExists();
-      string destPath = Utils.PrecreateDirectory(Workspace.DestinationPath);
+      string destPath = Util.PrecreateDirectory(Workspace.DestinationPath);
       using (var meta = new MetadataCsvReader(Workspace.MetadataPath))
       using (StreamReader trans = File.OpenText(translation))
       using (StreamReader source = File.OpenText(Workspace.SourcePath))

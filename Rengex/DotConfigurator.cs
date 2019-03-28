@@ -196,7 +196,7 @@ namespace Rengex {
     private void WriteDefaultConfig(string extension) {
       string top = Path.Combine(RootPath, extension);
       if (!File.Exists(top)) {
-        Utils.PrecreateDirectory(top);
+        Util.PrecreateDirectory(top);
         File.WriteAllText(top, ConfigBuilder.GetDefaultConfig());
       }
     }

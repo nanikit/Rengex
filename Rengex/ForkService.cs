@@ -303,13 +303,14 @@ namespace Rengex {
     }
 
     private ITranslator Backend;
+    private IProgress<int> Logger;
 
-    public SplitTranslater(ITranslator translator) {
+    public SplitTranslater(ITranslator translator, IProgress<int> progress) {
       Backend = translator;
     }
 
     public Task<string> Translate(string source) {
-      return Translate(source, null);
+      return Translate(source, Logger);
     }
 
     public async Task<string> Translate(string source, IProgress<int> progress) {

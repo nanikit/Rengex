@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -19,31 +20,8 @@ namespace Rengex {
     public ParallelTranslation(RegexDotConfiguration dot, string[] paths = null) {
       DotConfig = dot;
       Translations = paths?.SelectMany(p => WalkForSources(p))?.ToList();
-      WorkerCount = 4;
+      WorkerCount = Environment.ProcessorCount;
     }
-
-    private IEnumerable<TranslationUnit> WalkForSources(string path) {
-      return CwdDesignator
-        .WalkForSources(path)
-        .Select(x => new TranslationUnit(DotConfig, x));
-    }
-
-    private IEnumerable<TranslationUnit> FindTranslations() {
-      return WalkForSources(CwdDesignator.MetadataDirectory);
-    }
-
-    private Task ParallelForEach(Func<TranslationUnit, Task> action) {
-      IEnumerable<TranslationUnit> translations = Translations ?? FindTranslations();
-      return translations.ForEachAsync(WorkerCount, async t => {
-        try {
-          await action(t).ConfigureAwait(false);
-        }
-        catch (Exception e) {
-          OnError(t, e);
-        }
-      });
-    }
-
 
     public Task ImportTranslation() {
       return ParallelForEach(translation => {
@@ -85,6 +63,76 @@ namespace Rengex {
         OnComplete(translation);
       }).ConfigureAwait(false);
       translator.Dispose();
+    }
+
+    private IEnumerable<TranslationUnit> WalkForSources(string path) {
+      return CwdDesignator
+        .WalkForSources(path)
+        .Select(x => new TranslationUnit(DotConfig, x));
+    }
+
+    private IEnumerable<TranslationUnit> FindTranslations() {
+      return WalkForSources(CwdDesignator.MetadataDirectory);
+    }
+
+    private Task ParallelForEach(Func<TranslationUnit, Task> action) {
+      IEnumerable<TranslationUnit> translations = Translations ?? FindTranslations();
+      return translations.ForEachAsync(WorkerCount, async t => {
+        try {
+          await action(t).ConfigureAwait(false);
+        }
+        catch (Exception e) {
+          OnError(t, e);
+        }
+      });
+    }
+  }
+
+  interface INamedProgress {
+    string Name { get; }
+    double Progress { get; }
+    void Cancel();
+  }
+
+  interface IJpToKrBatchProgress : INamedProgress {
+    ObservableCollection<IJpToKrProgress> Ongoings { get; }
+  }
+
+  enum TranslationPhase {
+    Import, Translation, Export, Complete, Error
+  }
+
+  interface IJpToKrProgress : INamedProgress {
+    TranslationPhase Phase { get; }
+  }
+
+  class JpToKrWork : ViewModelBase, IJpToKrProgress {
+    private TranslationUnit Translation;
+
+    private TranslationPhase _Phase = TranslationPhase.Import;
+    public TranslationPhase Phase {
+      get => _Phase;
+      set => Set(ref _Phase, value);
+    }
+
+    public string Name => throw new NotImplementedException();
+
+    private double _Progress;
+    public double Progress {
+      get => _Progress;
+      set => Set(ref _Progress, value);
+    }
+
+    public JpToKrWork(TranslationUnit tu) {
+      Translation = tu;
+    }
+
+    public void SetProgress(TranslationPhase phase, double progress) {
+      Phase = phase;
+      Progress = progress;
+    }
+
+    public void Cancel() {
     }
   }
 }
