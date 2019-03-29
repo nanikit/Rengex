@@ -19,6 +19,7 @@
           </DataTrigger>
         </Style.Triggers>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
         <Setter Property="ItemTemplate">
           <Setter.Value>
             <DataTemplate>
