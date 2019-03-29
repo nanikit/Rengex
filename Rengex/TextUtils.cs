@@ -191,15 +191,15 @@ namespace Rengex {
   class CharCountingReader {
     public int Position { get; private set; }
 
-    private StreamReader Base;
+    private TextReader Base;
     private char[] Buffer;
 
-    public CharCountingReader(StreamReader reader, char[] buffer = null) {
+    public CharCountingReader(TextReader reader, char[] buffer = null) {
       Base = reader;
       Buffer = buffer ?? new char[2048];
     }
 
-    public int TextCopyTo(StreamWriter destination, int length) {
+    public int TextCopyTo(TextWriter destination, int length) {
       int remain = length;
       while (remain > 0) {
         int read = Base.ReadBlock(Buffer, 0, Math.Min(remain, Buffer.Length));

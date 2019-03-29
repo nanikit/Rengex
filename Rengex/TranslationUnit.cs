@@ -79,9 +79,10 @@ namespace Rengex {
     public void BuildTranslation() {
       string translation = GetAlternativeTranslationIfExists();
       string destPath = Util.PrecreateDirectory(Workspace.DestinationPath);
+      string sourceTxt = ReadAllTextOfMajorEncoding(Workspace.SourcePath);
       using (var meta = new MetadataCsvReader(Workspace.MetadataPath))
       using (StreamReader trans = File.OpenText(translation))
-      using (StreamReader source = File.OpenText(Workspace.SourcePath))
+      using (var source = new StringReader(sourceTxt))
       using (var dest = new StreamWriter(File.Create(destPath), UTF8WithBom))
         CompileTranslation(meta, trans, source, dest);
     }
@@ -135,7 +136,7 @@ namespace Rengex {
       return $"{dir}\\{filename}";
     }
 
-    private void CompileTranslation(MetadataCsvReader meta, StreamReader trans, StreamReader source, StreamWriter dest) {
+    private void CompileTranslation(MetadataCsvReader meta, TextReader trans, TextReader source, TextWriter dest) {
       var src = new CharCountingReader(source);
       Config = DotConfig.GetConfiguration(Workspace.SourcePath);
       foreach (TextSpan span in meta.GetSpans()) {
@@ -162,7 +163,7 @@ namespace Rengex {
       return Config.PostReplace(span.Title ?? "", original, translation);
     }
 
-    private static string ReadCorrespondingTranslation(string value, StreamReader trans) {
+    private static string ReadCorrespondingTranslation(string value, TextReader trans) {
       int cnt = TextUtils.CountLines(value);
       IEnumerable<string> lines = Enumerable.Range(0, cnt).Select(_ => trans.ReadLine());
       return string.Join("\r\n", lines);

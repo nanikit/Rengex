@@ -254,6 +254,7 @@ namespace Rengex {
         ofd.Multiselect = false;
         ofd.Title = "Ehnd를 설치한 이지트랜스 폴더의 파일을 아무거나 찾아주세요";
         if (ofd.ShowDialog() != true) {
+          TbLog.Document.Blocks.Remove(container);
           return;
         }
         Properties.Settings.Default.EzTransDir = Path.GetDirectoryName(ofd.FileName);
