@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Rengex"
-        mc:Ignorable="d" AllowDrop="True" Drop="OnDrop"
+        mc:Ignorable="d" AllowDrop="True" Drop="OnDrop" UseLayoutRounding="True"
         Title="Rengex" Height="450" Width="480">
   <Window.Resources>
     <ResourceDictionary>
@@ -14,6 +14,7 @@
       </ResourceDictionary.MergedDictionaries>
       <Style TargetType="Button">
         <Setter Property="Background" Value="#fafafa"/>
+        <Setter Property="BorderBrush" Value="SlateGray"/>
         <Setter Property="BorderThickness" Value="0"/>
       </Style>
     </ResourceDictionary>
@@ -29,21 +30,21 @@
       <ColumnDefinition Width="3*"/>
       <ColumnDefinition Width="5*"/>
     </Grid.ColumnDefinitions>
-    <Button Name="BtnImport" Click="OnImportClick" Grid.RowSpan="2" MouseRightButtonUp="OnRightClick">
+    <Button Name="BtnImport" Click="OnImportClick" Grid.RowSpan="2" MouseRightButtonUp="OnRightClick" BorderThickness="0 1 0 0">
       <DockPanel>
         <TextBlock Text="파일 가져오기 또는 드래그" DockPanel.Dock="Bottom"/>
         <StaticResource ResourceKey="Import"/>
       </DockPanel>
     </Button>
-    <Button Name="BtnTranslate" Content="번역" Grid.Column="1" BorderThickness="1 0 1 0" Click="OnTranslateClick" MouseRightButtonUp="OnRightClick"/>
+    <Button Name="BtnTranslate" Content="번역" Grid.Column="1" BorderThickness="1 1 1 0" Click="OnTranslateClick" MouseRightButtonUp="OnRightClick"/>
     <Button Name="BtnOnestop" Content="원터치" Grid.Column="1" Grid.Row="1" BorderThickness="1 1 1 0" Click="OnOnestopClick" MouseRightButtonUp="OnRightClick" />
-    <Button Name="BtnExport" Grid.Column="2" Click="OnExportClick" Grid.RowSpan="2" MouseRightButtonUp="OnRightClick">
+    <Button Name="BtnExport" Grid.Column="2" Click="OnExportClick" Grid.RowSpan="2" MouseRightButtonUp="OnRightClick" BorderThickness="0 1 0 0">
       <DockPanel>
         <TextBlock Text="번역 결과 내보내기" DockPanel.Dock="Bottom"/>
         <StaticResource ResourceKey="Export"/>
       </DockPanel>
     </Button>
-    <RichTextBox Name="TbLog" Grid.Row="2" Grid.ColumnSpan="3" VerticalScrollBarVisibility="Auto"
+    <RichTextBox Name="TbLog" Grid.Row="2" Grid.ColumnSpan="3" VerticalScrollBarVisibility="Auto" BorderThickness="0 1 0 0"
                  AcceptsReturn="True" PreviewDragOver="TbLogOnPreviewDragOver">
       <RichTextBox.CommandBindings>
         <CommandBinding Command="{x:Static ApplicationCommands.Copy}" Executed="CopyTextCommand"/>

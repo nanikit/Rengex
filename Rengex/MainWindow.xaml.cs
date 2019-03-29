@@ -194,10 +194,10 @@ namespace Rengex {
       else if (button == BtnTranslate) {
         DropAction = DropAction == OnTranslateClick ? nul : OnTranslateClick;
       }
-      BtnImport.Background = null;
-      BtnExport.Background = null;
-      BtnOnestop.Background = null;
-      BtnTranslate.Background = null;
+      BtnImport.ClearValue(Control.BackgroundProperty);
+      BtnExport.ClearValue(Control.BackgroundProperty);
+      BtnOnestop.ClearValue(Control.BackgroundProperty);
+      BtnTranslate.ClearValue(Control.BackgroundProperty);
       if (DropAction != null) {
         button.Background = new SolidColorBrush(Colors.Azure);
       }
