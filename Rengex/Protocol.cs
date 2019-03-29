@@ -56,7 +56,9 @@ namespace Rengex {
         read += justRead;
         progress?.Invoke((double)read / len);
       }
-      if (read != len) throw new EndOfStreamException();
+      if (read != len) {
+        throw new EndOfStreamException();
+      }
 
       return buf;
     }

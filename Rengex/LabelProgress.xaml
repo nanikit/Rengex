@@ -1,11 +1,15 @@
-﻿<Grid x:Class="Rengex.LabelProgress"
+﻿<UserControl x:Class="Rengex.LabelProgress"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Rengex"
              mc:Ignorable="d"
-             Height="25" MinWidth="300" HorizontalAlignment="Stretch">
-  <ProgressBar Name="PbProgress" />
-  <TextBlock Name="TbLabel" HorizontalAlignment="Center" VerticalAlignment="Center" />
-</Grid>
+             Name="Root" Foreground="PaleGreen" Height="25" MinWidth="300">
+  <Grid>
+    <ProgressBar Name="PbProgress" HorizontalAlignment="Stretch"
+                 Value="{Binding Value, Mode=OneWay, ElementName=Root}"
+                 Foreground="{Binding Foreground, ElementName=Root, FallbackValue=PaleGreen}" />
+    <TextBlock Name="TbLabel" Text="{Binding Label, ElementName=Root}" Foreground="Black" HorizontalAlignment="Center" VerticalAlignment="Center" />
+  </Grid>
+</UserControl>

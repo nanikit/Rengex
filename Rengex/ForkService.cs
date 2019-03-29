@@ -10,7 +10,7 @@ namespace Rengex {
 
   public class ChildForkTranslator {
     int MsDelay;
-    ITranslator Translator;
+    IJp2KrTranslator Translator;
     NamedPipeClientStream PipeClient;
 
     public ChildForkTranslator(int msDelay, string pipeName = ParentForkTranslator.DefaultPipeName) {
@@ -42,7 +42,7 @@ namespace Rengex {
     }
   }
 
-  public class ParentForkTranslator : ITranslator {
+  public class ParentForkTranslator : IJp2KrTranslator {
     public const string DefaultPipeName = "rengex_subtrans";
 
     /// <summary>
@@ -125,7 +125,7 @@ namespace Rengex {
     }
   }
 
-  sealed class SelfTranslator : ITranslator {
+  sealed class SelfTranslator : IJp2KrTranslator {
     private static EzTransXp Instance;
 
     public SelfTranslator(int msDelay = 200) {
@@ -149,11 +149,11 @@ namespace Rengex {
     public void Dispose() { }
   }
 
-  class ForkTranslator : ITranslator {
+  class ForkTranslator : IJp2KrTranslator {
     int PoolSize;
     Task ManagerTask;
     List<Task> Workers = new List<Task>();
-    List<ITranslator> Translators = new List<ITranslator>();
+    List<IJp2KrTranslator> Translators = new List<IJp2KrTranslator>();
     MyBufferBlock<Job> Jobs = new MyBufferBlock<Job>();
     CancellationTokenSource Cancel = new CancellationTokenSource();
 
@@ -169,13 +169,16 @@ namespace Rengex {
       return job.Client.Task;
     }
 
-    private async Task Worker(ITranslator translator, Job job) {
+    private async Task Worker(IJp2KrTranslator translator, Job job) {
       try {
         string res = await translator.Translate(job.Source).ConfigureAwait(false);
         job.Client.TrySetResult(res);
       }
       catch (Exception e) {
-        Jobs.Enqueue(job);
+        job.Client.TrySetException(e);
+        if (e is EzTransNotFoundException) {
+          Cancel.Cancel();
+        }
         throw e;
       }
     }
@@ -189,7 +192,7 @@ namespace Rengex {
         }
         await Schedule(job).ConfigureAwait(false);
       }
-      foreach (ITranslator translator in Translators) {
+      foreach (IJp2KrTranslator translator in Translators) {
         translator.Dispose();
       }
     }
@@ -281,7 +284,18 @@ namespace Rengex {
     }
   }
 
-  public class SplitTranslater : ITranslator {
+  /// <summary>
+  /// It provides split translation with progress information.
+  /// </summary>
+  /// <remarks>
+  /// It's Dispose() doesn't dispose base translator.
+  /// </remarks>
+  public class SplitTranslater : IJp2KrTranslator {
+
+    public interface Jp2KrLoggable {
+      void OnStart(int total);
+      void OnProgress(int current);
+    }
 
     private static IEnumerable<string> ChunkByLines(string source) {
       int startIdx = 0;
@@ -302,22 +316,25 @@ namespace Rengex {
       }
     }
 
-    private ITranslator Backend;
-    private IProgress<int> Logger;
+    private IJp2KrTranslator Backend;
+    private Jp2KrLoggable Logger;
 
-    public SplitTranslater(ITranslator translator, IProgress<int> progress) {
+    public SplitTranslater(IJp2KrTranslator translator, Jp2KrLoggable progress) {
       Backend = translator;
+      Logger = progress;
     }
 
     public Task<string> Translate(string source) {
       return Translate(source, Logger);
     }
 
-    public async Task<string> Translate(string source, IProgress<int> progress) {
+    public async Task<string> Translate(string source, Jp2KrLoggable progress) {
       List<string> splits = ChunkByLines(source).ToList();
       List<Task<string>> splitTasks = splits.Select(x => Backend.Translate(x)).ToList();
       var runnings = new List<Task<string>>(splitTasks);
       int translatedLength = 0;
+
+      progress?.OnStart(source.Length);
 
       while (runnings.Count != 0) {
         Task<string> done = await Task.WhenAny(runnings).ConfigureAwait(false);
@@ -325,14 +342,16 @@ namespace Rengex {
 
         int doneIdx = splitTasks.IndexOf(done);
         translatedLength += splits[doneIdx].Length;
-        progress?.Report(translatedLength);
+        progress?.OnProgress(translatedLength);
       }
 
       return string.Join("", splitTasks.Select(x => x.Result));
     }
 
+    /// <summary>
+    /// It does nothing.
+    /// </summary>
     public void Dispose() {
-      Backend.Dispose();
     }
   }
 }

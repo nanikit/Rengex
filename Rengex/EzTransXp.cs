@@ -11,7 +11,7 @@ namespace Rengex {
   /// <summary>
   /// It can translate japanese to korean.
   /// </summary>
-  public interface ITranslator : IDisposable {
+  public interface IJp2KrTranslator : IDisposable {
     /// <summary>
     /// Translate japanese string to korean.
     /// </summary>
@@ -24,10 +24,14 @@ namespace Rengex {
     public override string Message => "이지트랜스를 찾지 못했습니다.";
   }
 
-  public class EzTransXp : ITranslator {
+  public class EzTransXp : IJp2KrTranslator {
 
     private static readonly Regex RxDecode =
       new Regex(@"~x([0-9A-F]{4})>|~X([0-9A-F]{4})([0-9A-F]{3})>|.[^~]*", RegexOptions.Compiled);
+
+    private static string GetDllPath(string eztPath) {
+      return Path.Combine(eztPath, "J2KEngine.dll");
+    }
 
     public readonly Task InitDll;
 
@@ -40,7 +44,7 @@ namespace Rengex {
       if (string.IsNullOrWhiteSpace(eztPath)) {
         eztPath = GetEztransPathFromReg();
       }
-      if (eztPath == null) {
+      if (eztPath == null || !File.Exists(GetDllPath(eztPath))) {
         throw new EzTransNotFoundException();
       }
       InitDll = LoadNativeDll(eztPath, msDelay);
@@ -57,7 +61,7 @@ namespace Rengex {
     }
 
     private async Task LoadNativeDll(string eztPath, int msDelay) {
-      EzTransDll = LoadLibrary(Path.Combine(eztPath, "J2KEngine.dll"));
+      EzTransDll = LoadLibrary(GetDllPath(eztPath));
       if (EzTransDll == IntPtr.Zero) {
         int errorCode = Marshal.GetLastWin32Error();
         throw new Exception($"라이브러리 로드 실패(에러 코드: {errorCode})");

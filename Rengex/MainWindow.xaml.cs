@@ -20,7 +20,7 @@ namespace Rengex {
 
     private Task Ongoing;
     private RoutedEventHandler DropAction;
-    private ParallelTranslation Translator;
+    private Jp2KrTranslationVM Translator;
     private RegexDotConfiguration DotConfig;
 
     public MainWindow() {
@@ -51,17 +51,21 @@ namespace Rengex {
 
     protected override void OnPreviewKeyDown(KeyEventArgs e) {
       if (e.Key == Key.OemTilde) {
+        ShowRegexDebugWindow();
         e.Handled = true;
-        Window dw = DebugWindow;
-        if (dw == null) {
-          new DebugWindow(DotConfig).Show();
-        }
-        else {
-          dw.Activate();
-        }
       }
       else {
         base.OnPreviewKeyDown(e);
+      }
+    }
+
+    private void ShowRegexDebugWindow() {
+      Window dw = DebugWindow;
+      if (dw == null) {
+        new DebugWindow(DotConfig).Show();
+      }
+      else {
+        dw.Activate();
       }
     }
 
@@ -90,7 +94,7 @@ namespace Rengex {
       DropAction?.Invoke(null, e);
     }
 
-    private void CopyTextCommand(object sender, ExecutedRoutedEventArgs e) {
+    private void CopyTextCommand(object sender, ExecutedRoutedEventArgs ea) {
       const LogicalDirection forward = LogicalDirection.Forward;
       TextSelection selection = TbLog.Selection;
       TextPointer navigator = selection.Start.GetPositionAtOffset(0, forward);
@@ -107,15 +111,19 @@ namespace Rengex {
           buffer.Append(blockText, 0, croppedLen);
         }
         else if (
-          context == TextPointerContext.EmbeddedElement &&
-          navigator.Parent is InlineUIContainer container &&
-          container.Child is LabelProgress LpProg) {
-          buffer.Append(LpProg.TbLabel.Text);
+          context == TextPointerContext.ElementEnd &&
+          navigator.Parent is Paragraph
+        ) {
+          buffer.AppendLine();
         }
         else if (
-          context == TextPointerContext.ElementEnd &&
-          navigator.Parent is Paragraph) {
-          buffer.AppendLine();
+          navigator.Parent is BlockUIContainer block &&
+          block.Child is WorkProgress progress &&
+          progress.DataContext is Jp2KrTranslationVM work
+        ) {
+          foreach (Exception e in work.Exceptions) {
+            buffer.AppendLine(e.ToString());
+          }
         }
         navigator = navigator.GetNextContextPosition(forward);
       }
@@ -123,60 +131,21 @@ namespace Rengex {
 
       string txt = buffer.ToString();
       Clipboard.SetText(txt);
-      e.Handled = true;
+      ea.Handled = true;
     }
 
-    Dictionary<TranslationUnit, LabelProgress> JobProgresses = new Dictionary<TranslationUnit, LabelProgress>();
-    private void MakingProgress(TranslationUnit unit, string msg, double pg) => Post(() => {
-      if (!JobProgresses.TryGetValue(unit, out LabelProgress pb)) {
-        pb = new LabelProgress();
-        JobProgresses[unit] = pb;
-
-        WithAutoScroll(() => {
-          var container = new InlineUIContainer(pb, TbLog.Document.ContentEnd);
-          TbLog.AppendText("\r\n");
-        });
+    /// <summary>
+    /// Get a new translator if new paths are designated. Otherwise
+    /// use a clone of previous translator for efficiency if possible.
+    /// </summary>
+    private Jp2KrTranslationVM GetTranslator(string[] paths = null) {
+      if (paths == null && Translator != null) {
+        Translator = Translator.Clone();
+        return Translator;
       }
-      string ellipsisPath = GetEllipsisPath(unit);
-      pb.SetProgressAndLabel(pg, $"{ellipsisPath}: {msg}");
-      if (pg == 100) {
-        JobProgresses.Remove(unit);
+      else {
+        return new Jp2KrTranslationVM(EnsureConfiguration(), paths);
       }
-    });
-
-    private static string GetEllipsisPath(TranslationUnit unit) {
-      string path = unit.Workspace.RelativePath;
-      string ellipsisPath = path.Length > 30
-        ? $"...{path.Substring(path.Length - 30)}"
-        : path;
-      return ellipsisPath;
-    }
-
-    private ParallelTranslation GetTranslator(string[] paths = null) {
-      ParallelTranslation translator = new ParallelTranslation(EnsureConfiguration(), paths);
-      translator.OnImport += t => {
-        MakingProgress(t, "추출 중..", 25);
-      };
-      translator.OnTranslation += t => {
-        MakingProgress(t, "번역 중..", 50);
-      };
-      translator.OnExport += t => {
-        MakingProgress(t, "병합 중..", 80);
-      };
-      translator.OnComplete += t => {
-        MakingProgress(t, "완료", 100);
-      };
-      translator.OnError += (t, e) => {
-        string desc = e.Message;
-        if (e is RegexMatchTimeoutException) {
-          desc = "정규식 검색이 너무 오래 걸립니다. 정규식을 점검해주세요.";
-        }
-        AppendException(e, $"{Path.GetFileName(t.Workspace.RelativePath)}: {desc}");
-        LabelProgress pb = JobProgresses[t];
-        Post(() => pb.SetError(GetEllipsisPath(t)));
-        JobProgresses.Remove(t);
-      };
-      return translator;
     }
 
     private async void OnImportClick(object sender, RoutedEventArgs e) {
@@ -193,28 +162,19 @@ namespace Rengex {
       if (Translator == null) {
         return;
       }
-      await Operate(() => Task.Run(() => Translator.ImportTranslation()));
-    }
-
-    private void UseAllImportedIfNotSelected() {
-      if (Translator == null) {
-        Translator = GetTranslator();
-      }
+      await Operate(() => Task.Run(Translator.ImportTranslation));
     }
 
     private async void OnTranslateClick(object sender, RoutedEventArgs e) {
-      UseAllImportedIfNotSelected();
-      await Operate(Translator.MachineTranslation);
+      await Operate(GetTranslator().MachineTranslation);
     }
 
     private async void OnExportClick(object sender, RoutedEventArgs e) {
-      UseAllImportedIfNotSelected();
-      await Operate(() => Task.Run(() => Translator.ExportTranslation()));
+      await Operate(() => Task.Run(GetTranslator().ExportTranslation));
     }
 
     private async void OnOnestopClick(object sender, RoutedEventArgs e) {
-      UseAllImportedIfNotSelected();
-      await Operate(Translator.OnestopTranslation);
+      await Operate(GetTranslator().OnestopTranslation);
     }
 
     private void OnRightClick(object sender, MouseButtonEventArgs e) {
@@ -275,16 +235,19 @@ namespace Rengex {
         return;
       }
 
+      var control = new WorkProgress(Translator);
+      var container = new BlockUIContainer(control);
+      TbLog.Document.Blocks.Add(container);
+
       Ongoing = task();
       try {
         await Ongoing;
         LogText("작업이 끝났습니다.\r\n");
       }
-      catch (UnauthorizedAccessException e) {
-        AppendException(e, "파일이 사용 중이거나 읽기 전용인지 확인해보세요.");
+      catch (UnauthorizedAccessException) {
+        LogText("파일이 사용 중이거나 읽기 전용인지 확인해보세요.");
       }
-      catch (EzTransNotFoundException e) {
-        AppendException(e);
+      catch (EzTransNotFoundException) {
         var ofd = new OpenFileDialog();
         ofd.CheckPathExists = true;
         ofd.Multiselect = false;
@@ -295,8 +258,8 @@ namespace Rengex {
         Properties.Settings.Default.EzTransDir = Path.GetDirectoryName(ofd.FileName);
         Properties.Settings.Default.Save();
       }
-      catch (Exception e) {
-        AppendException(e);
+      catch (Exception) {
+        LogText($"오류가 발생했습니다. 진행 표시줄을 복사하면 오류 내용이 복사됩니다.\r\n");
       }
     }
 

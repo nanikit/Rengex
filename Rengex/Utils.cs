@@ -15,15 +15,34 @@ namespace Rengex {
       return path;
     }
 
+    public static string GetEllipsisPath(string path, int len) {
+      string ellipsisPath = path.Length > len
+        ? $"...{path.Substring(path.Length - len)}"
+        : path;
+      return ellipsisPath;
+    }
+
     public static Task ForEachAsync<T>(this IEnumerable<T> source, int dop, Func<T, Task> body) {
       IList<IEnumerator<T>> parts = Partitioner.Create(source).GetPartitions(dop);
       IEnumerable<Task> tasks = parts.Select(p => Task.Run(async () => {
         using (p) {
           while (p.MoveNext()) {
-            await body(p.Current);
+            await body(p.Current).ConfigureAwait(false);
           }
         }
       }));
+      return Task.WhenAll(tasks);
+    }
+
+    public static Task ForEachPinnedAsync<T>(this IEnumerable<T> source, int dop, Func<T, Task> body) {
+      IList<IEnumerator<T>> parts = Partitioner.Create(source).GetPartitions(dop);
+      IEnumerable<Task> tasks = parts.Select(async p => {
+        using (p) {
+          while (p.MoveNext()) {
+            await body(p.Current);
+          }
+        }
+      });
       return Task.WhenAll(tasks);
     }
   }
@@ -31,11 +50,18 @@ namespace Rengex {
   public class ViewModelBase : INotifyPropertyChanged {
     public event PropertyChangedEventHandler PropertyChanged;
 
+    /// <summary>
+    /// It should be called only in the property setter.
+    /// </summary>
     protected void Set<T>(ref T member, T value, [CallerMemberName] string name = null) {
-      if (member.Equals(value)) {
+      if (Object.Equals(member, value)) {
         return;
       }
       member = value;
+      NotifyChange(name);
+    }
+
+    protected void NotifyChange(string name) {
       var ev = new PropertyChangedEventArgs(name);
       PropertyChanged?.Invoke(this, ev);
     }
