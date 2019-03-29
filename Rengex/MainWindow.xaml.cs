@@ -123,6 +123,7 @@ namespace Rengex {
         ) {
           foreach (Exception e in work.Exceptions) {
             buffer.AppendLine(e.ToString());
+            buffer.AppendLine();
           }
         }
         navigator = navigator.GetNextContextPosition(forward);

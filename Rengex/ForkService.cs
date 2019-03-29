@@ -169,17 +169,26 @@ namespace Rengex {
       return job.Client.Task;
     }
 
+    /// <summary>
+    /// Monitor translation completion at most 3 trials.
+    /// </summary>
     private async Task Worker(IJp2KrTranslator translator, Job job) {
       try {
         string res = await translator.Translate(job.Source).ConfigureAwait(false);
         job.Client.TrySetResult(res);
       }
       catch (Exception e) {
-        job.Client.TrySetException(e);
         if (e is EzTransNotFoundException) {
           Cancel.Cancel();
         }
-        throw e;
+        if (job.RetryCount < 3) {
+          job.RetryCount++;
+          Jobs.Enqueue(job);
+        }
+        else {
+          job.Client.TrySetException(e);
+          throw e;
+        }
       }
     }
 
@@ -242,7 +251,7 @@ namespace Rengex {
 
     private async Task ScheduleAfterCompletion(Job job) {
       Task abort = Task.Delay(TimeSpan.FromDays(10), Cancel.Token);
-      Task<Task> seats = Task.WhenAny(Workers.ToArray());
+      Task<Task> seats = Task.WhenAny(Workers);
       Task fin = await Task.WhenAny(abort, seats).ConfigureAwait(false);
       if (fin == abort) {
         return;
@@ -281,6 +290,7 @@ namespace Rengex {
 
       public TaskCompletionSource<string> Client = new TaskCompletionSource<string>();
       public string Source;
+      public int RetryCount;
     }
   }
 
@@ -292,7 +302,7 @@ namespace Rengex {
   /// </remarks>
   public class SplitTranslater : IJp2KrTranslator {
 
-    public interface Jp2KrLoggable {
+    public interface IJp2KrLogger {
       void OnStart(int total);
       void OnProgress(int current);
     }
@@ -317,9 +327,9 @@ namespace Rengex {
     }
 
     private IJp2KrTranslator Backend;
-    private Jp2KrLoggable Logger;
+    private IJp2KrLogger Logger;
 
-    public SplitTranslater(IJp2KrTranslator translator, Jp2KrLoggable progress) {
+    public SplitTranslater(IJp2KrTranslator translator, IJp2KrLogger progress) {
       Backend = translator;
       Logger = progress;
     }
@@ -328,7 +338,7 @@ namespace Rengex {
       return Translate(source, Logger);
     }
 
-    public async Task<string> Translate(string source, Jp2KrLoggable progress) {
+    public async Task<string> Translate(string source, IJp2KrLogger progress) {
       List<string> splits = ChunkByLines(source).ToList();
       List<Task<string>> splitTasks = splits.Select(x => Backend.Translate(x)).ToList();
       var runnings = new List<Task<string>>(splitTasks);

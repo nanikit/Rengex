@@ -64,9 +64,9 @@ namespace Rengex {
     }
 
     public Jp2KrTranslationVM Clone() {
-      var clone = new Jp2KrTranslationVM(DotConfig);
-      clone.Translations = Translations;
-      return clone;
+      return new Jp2KrTranslationVM(DotConfig) {
+        Translations = Translations
+      };
     }
 
     public Task ImportTranslation() {
@@ -77,7 +77,7 @@ namespace Rengex {
     public async Task MachineTranslation() {
       WorkKind = "번역: ";
       var engine = new ForkTranslator(WorkerCount);
-      Func<TranslationUnit, Jp2KrWork> genVm = x => new TranslateJp2Kr(x, engine);
+      Jp2KrWork genVm(TranslationUnit x) => new TranslateJp2Kr(x, engine);
       await ParallelForEach(genVm).ConfigureAwait(false);
       engine.Dispose();
     }
@@ -90,7 +90,7 @@ namespace Rengex {
     public async Task OnestopTranslation() {
       WorkKind = "원터치: ";
       var engine = new ForkTranslator(WorkerCount);
-      Func<TranslationUnit, Jp2KrWork> genVm = x => new OnestopJp2Kr(x, engine);
+      Jp2KrWork genVm(TranslationUnit x) => new OnestopJp2Kr(x, engine);
       await ParallelForEach(genVm).ConfigureAwait(false);
       engine.Dispose();
     }
@@ -111,7 +111,7 @@ namespace Rengex {
       Progress.Value = 0;
       Progress.Label = $"{WorkKind}{complete} / {translations.Count}";
 
-      return translations.ForEachPinnedAsync(WorkerCount, async t => {
+      return translations.ForEachPinnedAsync(2, async t => {
         Jp2KrWork item = genViewModel(t);
         Ongoings.Add(item.Progress);
         try {
@@ -190,9 +190,6 @@ namespace Rengex {
 
   abstract class Jp2KrWork {
 
-    private static Brush FgNormal = new SolidColorBrush(Colors.PaleGreen);
-    private static Brush FgError = new SolidColorBrush(Colors.LightPink);
-
     private static string PhaseToString(TranslationPhase phase) {
       switch (phase) {
         case TranslationPhase.Complete:
@@ -267,7 +264,7 @@ namespace Rengex {
     }
   }
 
-  class TranslateJp2Kr : Jp2KrWork, Jp2KrLoggable {
+  class TranslateJp2Kr : Jp2KrWork, IJp2KrLogger {
     private IJp2KrTranslator Translator;
     private int TranslationSize;
 
@@ -296,7 +293,7 @@ namespace Rengex {
     }
   }
 
-  class OnestopJp2Kr : Jp2KrWork, Jp2KrLoggable {
+  class OnestopJp2Kr : Jp2KrWork, IJp2KrLogger {
     private IJp2KrTranslator Translator;
     private int TranslationSize;
 
