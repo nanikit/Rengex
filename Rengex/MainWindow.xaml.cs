@@ -90,7 +90,7 @@ namespace Rengex {
         return;
       }
       var paths = (string[])e.Data.GetData(DataFormats.FileDrop);
-      Translator = GetTranslator(paths);
+      RenewTranslator(paths);
       DropAction?.Invoke(null, e);
     }
 
@@ -139,14 +139,14 @@ namespace Rengex {
     /// Get a new translator if new paths are designated. Otherwise
     /// use a clone of previous translator for efficiency if possible.
     /// </summary>
-    private Jp2KrTranslationVM GetTranslator(string[] paths = null) {
+    private Jp2KrTranslationVM RenewTranslator(string[] paths = null) {
       if (paths == null && Translator != null) {
         Translator = Translator.Clone();
-        return Translator;
       }
       else {
-        return new Jp2KrTranslationVM(EnsureConfiguration(), paths);
+        Translator = new Jp2KrTranslationVM(EnsureConfiguration(), paths);
       }
+      return Translator;
     }
 
     private async void OnImportClick(object sender, RoutedEventArgs e) {
@@ -158,7 +158,7 @@ namespace Rengex {
         if (ofd.ShowDialog() != true) {
           return;
         }
-        Translator = GetTranslator(ofd.FileNames);
+        RenewTranslator(ofd.FileNames);
       }
       if (Translator == null) {
         return;
@@ -167,15 +167,15 @@ namespace Rengex {
     }
 
     private async void OnTranslateClick(object sender, RoutedEventArgs e) {
-      await Operate(GetTranslator().MachineTranslation);
+      await Operate(RenewTranslator().MachineTranslation);
     }
 
     private async void OnExportClick(object sender, RoutedEventArgs e) {
-      await Operate(() => Task.Run(GetTranslator().ExportTranslation));
+      await Operate(() => Task.Run(RenewTranslator().ExportTranslation));
     }
 
     private async void OnOnestopClick(object sender, RoutedEventArgs e) {
-      await Operate(GetTranslator().OnestopTranslation);
+      await Operate(RenewTranslator().OnestopTranslation);
     }
 
     private void OnRightClick(object sender, MouseButtonEventArgs e) {
@@ -260,7 +260,10 @@ namespace Rengex {
         Properties.Settings.Default.EzTransDir = Path.GetDirectoryName(ofd.FileName);
         Properties.Settings.Default.Save();
       }
-      catch (Exception) {
+      catch (Exception e) {
+        if (Translator.Exceptions.Count == 0) {
+          Translator.Exceptions.Add(e);
+        }
         LogText($"오류가 발생했습니다. 진행 표시줄을 복사하면 오류 내용이 복사됩니다.\r\n");
       }
     }
