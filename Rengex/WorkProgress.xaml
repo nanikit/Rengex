@@ -32,7 +32,7 @@
       </Style>
     </StackPanel.Resources>
     <ListView ItemsSource="{Binding Faults}"/>
-    <ListView ItemsSource="{Binding Ongoings}"/>
     <local:LabelProgress Value="{Binding Progress.Value}" Label="{Binding Progress.Label}" Foreground="{Binding Progress.Foreground}" Margin="3"/>
+    <ListView ItemsSource="{Binding Ongoings}"/>
   </StackPanel>
 </UserControl>

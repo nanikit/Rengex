@@ -238,7 +238,7 @@ namespace Rengex {
 
       var control = new WorkProgress(Translator);
       var container = new BlockUIContainer(control);
-      TbLog.Document.Blocks.Add(container);
+      WithAutoScroll(() => TbLog.Document.Blocks.Add(container));
 
       Ongoing = task();
       try {
