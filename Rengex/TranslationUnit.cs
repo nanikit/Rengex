@@ -56,8 +56,10 @@ namespace Rengex {
       var sb = new StringBuilder();
       using (var meta = new MetadataCsvReader(Workspace.MetadataPath))
       using (StreamReader trans = File.OpenText(Workspace.TranslationPath)) {
+        var sub = new SpanPairReader(trans);
+
         foreach (TextSpan span in meta.GetSpans()) {
-          string txt = ReadCorrespondingTranslation(span.Value, trans);
+          string txt = sub.ReadCorrespondingSpan(span);
           txt = Config.PreReplace(span.Title, txt);
           if (TextUtils.CountLines(txt) < 1) {
             sb.Append("xq>");
@@ -65,6 +67,7 @@ namespace Rengex {
           sb.AppendLine(txt);
         }
       }
+
       return sb.ToString();
     }
 
@@ -138,14 +141,16 @@ namespace Rengex {
 
     private void CompileTranslation(MetadataCsvReader meta, TextReader trans, TextReader source, TextWriter dest) {
       var src = new CharCountingReader(source);
+      var sub = new SpanPairReader(trans);
       Config = DotConfig.GetConfiguration(Workspace.SourcePath);
+
       foreach (TextSpan span in meta.GetSpans()) {
         int preserveSize = (int)span.Offset - src.Position;
         if (src.TextCopyTo(dest, preserveSize) != preserveSize) {
           return;
         }
 
-        string translated = ReadCorrespondingTranslation(span.Value, trans);
+        string translated = sub.ReadCorrespondingSpan(span);
         translated = ApplyPostProcess(span, src, translated);
         if (translated == null) {
           continue;
@@ -163,10 +168,62 @@ namespace Rengex {
       return Config.PostReplace(span.Title ?? "", original, translation);
     }
 
-    private static string ReadCorrespondingTranslation(string value, TextReader trans) {
-      int cnt = TextUtils.CountLines(value);
-      IEnumerable<string> lines = Enumerable.Range(0, cnt).Select(_ => trans.ReadLine());
-      return string.Join("\r\n", lines);
+  }
+
+  /// <summary>
+  /// 메타 파일에 대응하는 번역문 부분을 가져오는 클래스.
+  /// ReadLine을 쓰면 CR, LF, CR/LF을 구분할 수 없게 되어 수작업함.
+  /// </summary>
+  internal class SpanPairReader {
+    private StringBuilder Buffer = new StringBuilder();
+    private TextReader Reader;
+
+    public SpanPairReader(TextReader reader) {
+      Reader = reader;
+    }
+
+    public string ReadCorrespondingSpan(TextSpan span) {
+      int spanLineCnt = TextUtils.CountLines(span.Value);
+      return ReadCorrespondingLines(spanLineCnt);
+    }
+
+    private string ReadCorrespondingLines(int n) {
+      Buffer.Clear();
+
+      int lineReadCnt = 0;
+      while (lineReadCnt < n) {
+        int c = Reader.Read();
+        if (c < 0) {
+          throw new EndOfStreamException();
+        }
+        if (c == '\r') {
+          lineReadCnt++;
+          bool isEnd = lineReadCnt >= n;
+          CopyTrailingLF(isEnd);
+          continue;
+        }
+        if (c == '\n') {
+          lineReadCnt++;
+        }
+        Buffer.Append((char)c);
+      }
+
+      return Buffer.ToString();
+    }
+
+    private void CopyTrailingLF(bool skipBuffer) {
+      if (skipBuffer) {
+        if (Reader.Peek() == '\n') {
+          Reader.Read();
+        }
+      }
+      else {
+        Buffer.Append('\r');
+        if (Reader.Peek() == '\n') {
+          Reader.Read();
+          Buffer.Append('\n');
+        }
+      }
     }
   }
 }
