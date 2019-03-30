@@ -11,26 +11,36 @@ using System.Threading.Tasks;
 namespace Rengex.Tests {
   [TestClass]
   public class EzTransXpTest {
-    //EzTransXp Trans = EzTransXp.Instance;
+    EzTransXp Trans = new EzTransXp();
 
-    [TestMethod]
-    public void InitializationTest() {
-      //string res = Trans.Translate("命令を無視することを指定します");
-      //Console.WriteLine(res);
+    private void TestPreservation(string str) {
+      Task<string> t = Trans.Translate(str);
+      t.Wait();
+      Assert.AreEqual(str, t.Result);
     }
 
     [TestMethod]
-    public void SjisWhitespaceTest() {
-      var tester = new EncodingTester(932);
-      for (char c = '\0'; c <= 65535; c++) {
-        if (!tester.IsEncodable(c) && char.IsWhiteSpace(c)) {
-          Console.WriteLine(c);
-        }
-        if (c == 65535) {
-          Console.WriteLine("Success");
-          break;
-        }
-      }
+    public void SymbolPreservationTest() {
+      TestPreservation("-----");
+      TestPreservation("#####");
+      TestPreservation("―――――");
+      TestPreservation("─────");
+      TestPreservation("--##――@@--");
+    }
+
+    [TestMethod]
+    public void WhitespacePreservationTest1() {
+      TestPreservation("\r");
+    }
+
+    [TestMethod]
+    public void WhitespacePreservationTest2() {
+      TestPreservation("\n\nd");
+    }
+
+    [TestMethod]
+    public void WhitespacePreservationTest3() {
+      TestPreservation("\r\n");
     }
   }
 }
