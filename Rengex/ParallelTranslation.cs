@@ -76,10 +76,10 @@ namespace Rengex {
 
     public async Task MachineTranslation() {
       WorkKind = "번역: ";
-      var engine = new ForkTranslator(WorkerCount);
-      Jp2KrWork genVm(TranslationUnit x) => new TranslateJp2Kr(x, engine);
-      await ParallelForEach(genVm).ConfigureAwait(false);
-      engine.Dispose();
+      using (var engine = new ForkTranslator(WorkerCount)) {
+        Jp2KrWork genVm(TranslationUnit x) => new TranslateJp2Kr(x, engine);
+        await ParallelForEach(genVm).ConfigureAwait(false);
+      }
     }
 
     public Task ExportTranslation() {
@@ -89,10 +89,10 @@ namespace Rengex {
 
     public async Task OnestopTranslation() {
       WorkKind = "원터치: ";
-      var engine = new ForkTranslator(WorkerCount);
-      Jp2KrWork genVm(TranslationUnit x) => new OnestopJp2Kr(x, engine);
-      await ParallelForEach(genVm).ConfigureAwait(false);
-      engine.Dispose();
+      using (var engine = new ForkTranslator(WorkerCount)) {
+        Jp2KrWork genVm(TranslationUnit x) => new OnestopJp2Kr(x, engine);
+        await ParallelForEach(genVm).ConfigureAwait(false);
+      }
     }
 
     private IEnumerable<TranslationUnit> WalkForSources(string path) {
