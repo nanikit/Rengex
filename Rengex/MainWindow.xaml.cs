@@ -49,6 +49,10 @@ namespace Rengex {
     private DebugWindow DebugWindow =>
       App.Current.Windows.OfType<DebugWindow>().FirstOrDefault();
 
+    private void OnFlaskClick(object sender, RoutedEventArgs e) {
+      ShowRegexDebugWindow();
+    }
+
     protected override void OnPreviewKeyDown(KeyEventArgs e) {
       if (e.Key == Key.OemTilde) {
         ShowRegexDebugWindow();
