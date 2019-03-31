@@ -5,10 +5,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Rengex"
         mc:Ignorable="d"
-        Title="DebugWindow" Height="450" Width="800">
+        Title="{Binding SelectedItem.RegionPath, ElementName=TcConfig}" Height="450" Width="800">
   <Grid>
-    <TextBox Name="TbDebug"/>
-    <Button Width="50" Height="50" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" Style="{StaticResource OpaqueHoverButton}"
+    <TabControl Name="TcConfig" ItemsSource="{Binding Mode=OneTime}">
+      <TabControl.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Text="{Binding Title, Mode=OneTime}"/>
+        </DataTemplate>
+      </TabControl.ItemTemplate>
+      <TabControl.ContentTemplate>
+        <DataTemplate>
+          <TextBox Text="{Binding Content, Mode=OneTime}"/>
+        </DataTemplate>
+      </TabControl.ContentTemplate>
+    </TabControl>
+    <Button Width="50" Height="50" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" Style="{StaticResource OpaqueHoverButton}"
             Click="OnRegex101Click" ToolTipService.ToolTip="regex101 사이트를 엽니다">
       <Button.Template>
         <ControlTemplate>
