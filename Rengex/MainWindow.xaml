@@ -30,15 +30,18 @@
       <ColumnDefinition Width="3*"/>
       <ColumnDefinition Width="5*"/>
     </Grid.ColumnDefinitions>
-    <Button Name="BtnImport" Click="OnImportClick" Grid.RowSpan="2" MouseRightButtonUp="OnRightClick" BorderThickness="0 1 0 0">
+    <Button Name="BtnImport" Click="OnImportClick" Grid.RowSpan="2" MouseRightButtonUp="OnRightClick" BorderThickness="0 1 0 0" ToolTip="파일을 복사하고 내용을 추출합니다">
       <DockPanel>
         <TextBlock Text="파일 가져오기 또는 드래그" DockPanel.Dock="Bottom"/>
         <StaticResource ResourceKey="Import"/>
       </DockPanel>
     </Button>
-    <Button Name="BtnTranslate" Content="번역" Grid.Column="1" BorderThickness="1 1 1 0" Click="OnTranslateClick" MouseRightButtonUp="OnRightClick"/>
-    <Button Name="BtnOnestop" Content="원터치" Grid.Column="1" Grid.Row="1" BorderThickness="1 1 1 0" Click="OnOnestopClick" MouseRightButtonUp="OnRightClick" />
-    <Button Name="BtnExport" Grid.Column="2" Click="OnExportClick" Grid.RowSpan="2" MouseRightButtonUp="OnRightClick" BorderThickness="0 1 0 0">
+    <Button Name="BtnTranslate" Content="번역" Grid.Column="1" BorderThickness="1 1 1 0"
+            Click="OnTranslateClick" MouseRightButtonUp="OnRightClick" ToolTip="기존 번역을 무시하고 기계 번역을 수행합니다"/>
+    <Button Name="BtnOnestop" Content="원터치" Grid.Column="1" Grid.Row="1" BorderThickness="1 1 1 0"
+            Click="OnOnestopClick" MouseRightButtonUp="OnRightClick"
+            ToolTip="나머지 세 개 버튼을 순서대로 실행합니다.&#x0a;다른 버튼을 우클릭해 드래그 시 기본 행동을 바꿀 수 있습니다."/>
+    <Button Name="BtnExport" Grid.Column="2" Click="OnExportClick" Grid.RowSpan="2" MouseRightButtonUp="OnRightClick" BorderThickness="0 1 0 0" ToolTip="번역한 결과를 원래 파일에 합칩니다">
       <DockPanel>
         <TextBlock Text="번역 결과 내보내기" DockPanel.Dock="Bottom"/>
         <StaticResource ResourceKey="Export"/>
