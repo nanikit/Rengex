@@ -8,5 +8,25 @@
         Title="DebugWindow" Height="450" Width="800">
   <Grid>
     <TextBox Name="TbDebug"/>
+    <Button Width="50" Height="50" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" Opacity="0.5"
+            Click="OnRegex101Click" ToolTipService.ToolTip="regex101 사이트를 엽니다">
+      <Button.Style>
+        <Style TargetType="Button">
+          <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter Property="Opacity" Value="1"/>
+            </Trigger>
+          </Style.Triggers>
+        </Style>
+      </Button.Style>
+      <Button.Template>
+        <ControlTemplate>
+          <Grid>
+            <Ellipse Fill="#457abb"/>
+            <TextBlock Text="R" FontSize="27" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Grid>
+        </ControlTemplate>
+      </Button.Template>
+    </Button>
   </Grid>
 </Window>

@@ -97,5 +97,9 @@ namespace Rengex {
       txt = txt.Replace("\\w", @"[\pL\pN_]");
       TbDebug.Text = "(?imx)" + txt;
     }
+
+    private void OnRegex101Click(object sender, RoutedEventArgs e) {
+      System.Diagnostics.Process.Start("https://regex101.com/r/IQeg4l/1");
+    }
   }
 }
