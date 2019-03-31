@@ -401,12 +401,13 @@ namespace Rengex {
       }
 
       private void ExpectReplaceLine(string patLine) {
-        while (Line.MoveNext() && IsCommentLine(Line.Current)) { }
-
-        if (Line.Current == null) {
-          string fileName = Path.GetFileName(ReplaceConfig.FullPath);
-          throw new ApplicationException($"치환할 문자열이 없습니다: {fileName}\n{patLine}");
+        while (Line.MoveNext()) {
+          if (!IsCommentLine(Line.Current)) {
+            return;
+          }
         }
+        string fileName = Path.GetFileName(ReplaceConfig.FullPath);
+        throw new ApplicationException($"치환할 문자열이 없습니다: {fileName}\n{patLine}");
       }
     }
 
