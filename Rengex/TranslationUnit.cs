@@ -45,8 +45,8 @@ namespace Rengex {
       if (!File.Exists(Workspace.TranslationPath)) {
         ExtractSourceText();
       }
-      string gluedJp = PreprocessTranslation();
-      string kr = await translator.Translate(gluedJp).ConfigureAwait(false);
+      string jp = File.ReadAllText(Workspace.TranslationPath);
+      string kr = await translator.Translate(jp).ConfigureAwait(false);
       File.WriteAllText(GetAlternativeTranslationPath(), kr);
     }
 
@@ -59,7 +59,6 @@ namespace Rengex {
 
         foreach (TextSpan span in meta.GetSpans()) {
           string txt = sub.ReadCorrespondingSpan(span);
-          txt = Config.PreReplace(span.Title, txt);
           sb.AppendLine(txt);
         }
       }
@@ -103,13 +102,16 @@ namespace Rengex {
     }
 
     private void WriteIntermediates(IEnumerable<TextSpan> spans) {
+      Config = DotConfig.GetConfiguration(Workspace.SourcePath);
       using (StreamWriter meta = TextUtils.GetReadSharedWriter(Workspace.MetadataPath))
       using (StreamWriter trans = TextUtils.GetReadSharedWriter(Workspace.TranslationPath)) {
         foreach (TextSpan span in spans) {
           string value = span.Value;
           string newLines = new string('\n', TextUtils.CountLines(value));
           meta.WriteLine($"{span.Offset},{span.Length},{span.Title}{newLines}");
-          trans.WriteLine(value);
+
+          string preprocessed = Config.PreReplace(span.Title, value);
+          trans.WriteLine(preprocessed);
         }
       }
     }
