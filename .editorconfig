@@ -1,0 +1,8 @@
+[*]
+indent_style = space
+
+[*.cs]
+indent_size = 2
+csharp_indent_switch_labels = false
+insert_final_newline = true
+charset = utf-8-bom
