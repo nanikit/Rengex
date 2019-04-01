@@ -45,13 +45,12 @@ namespace Rengex {
       if (!File.Exists(Workspace.TranslationPath)) {
         ExtractSourceText();
       }
-      string gluedJp = GetGluedTranslation();
-      string gluedKr = await translator.Translate(gluedJp).ConfigureAwait(false);
-      string kr = RemoveSpanGlue(gluedKr);
+      string gluedJp = PreprocessTranslation();
+      string kr = await translator.Translate(gluedJp).ConfigureAwait(false);
       File.WriteAllText(GetAlternativeTranslationPath(), kr);
     }
 
-    private string GetGluedTranslation() {
+    private string PreprocessTranslation() {
       Config = DotConfig.GetConfiguration(Workspace.SourcePath);
       var sb = new StringBuilder();
       using (var meta = new MetadataCsvReader(Workspace.MetadataPath))
@@ -61,18 +60,11 @@ namespace Rengex {
         foreach (TextSpan span in meta.GetSpans()) {
           string txt = sub.ReadCorrespondingSpan(span);
           txt = Config.PreReplace(span.Title, txt);
-          if (TextUtils.CountLines(txt) < 1) {
-            sb.Append("xq>");
-          }
           sb.AppendLine(txt);
         }
       }
 
       return sb.ToString();
-    }
-
-    private static string RemoveSpanGlue(string glued) {
-      return glued.Replace("xq>", "");
     }
 
     public void MachineTranslate() {
