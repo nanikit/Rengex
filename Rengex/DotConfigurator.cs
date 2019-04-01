@@ -238,7 +238,9 @@ namespace Rengex {
       case WatcherChangeTypes.Renamed:
         var ren = fse as RenamedEventArgs;
         RemoveRegion(ren.OldFullPath);
-        AddRegion(ren.FullPath);
+        if (ren.FullPath.EndsWith(ConfigBuilder.GetExtension())) {
+          AddRegion(ren.FullPath);
+        }
         break;
       }
     }
