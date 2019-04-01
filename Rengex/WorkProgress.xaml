@@ -11,11 +11,7 @@
       <Style TargetType="ListView">
         <Style.Triggers>
           <DataTrigger Binding="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=Items.Count}" Value="0" >
-            <Setter Property="Template">
-              <Setter.Value>
-                <ControlTemplate/>
-              </Setter.Value>
-            </Setter>
+            <Setter Property="Visibility" Value="Collapsed"/>
           </DataTrigger>
         </Style.Triggers>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -33,6 +29,6 @@
     </StackPanel.Resources>
     <ListView ItemsSource="{Binding Faults}"/>
     <local:LabelProgress Value="{Binding Progress.Value}" Label="{Binding Progress.Label}" Foreground="{Binding Progress.Foreground}" Margin="3"/>
-    <ListView ItemsSource="{Binding Ongoings}"/>
+    <ListView Name="LvOngoing" ItemsSource="{Binding Ongoings}" SizeChanged="OngoingSizeChanged"/>
   </StackPanel>
 </UserControl>

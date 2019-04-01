@@ -25,5 +25,11 @@ namespace Rengex {
     public WorkProgress(Jp2KrTranslationVM jp2kr) : this() {
       DataContext = jp2kr;
     }
+
+    private void OngoingSizeChanged(object sender, SizeChangedEventArgs e) {
+      if (e.NewSize.Height < e.PreviousSize.Height) {
+        LvOngoing.Height = e.PreviousSize.Height;
+      }
+    }
   }
 }

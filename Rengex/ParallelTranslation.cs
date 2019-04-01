@@ -111,7 +111,7 @@ namespace Rengex {
       Progress.Value = 0;
       Progress.Label = $"{WorkKind}{complete} / {translations.Count}";
 
-      return translations.ForEachPinnedAsync(2, async t => {
+      return translations.ForEachPinnedAsync(WorkerCount, async t => {
         Jp2KrWork item = genViewModel(t);
         Ongoings.Add(item.Progress);
         try {
