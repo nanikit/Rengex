@@ -134,8 +134,8 @@ namespace Rengex {
     /// <summary>
     /// 연속된 상태로 꿀도르를 통과했을 때 변형 가능성이 있는 문자를 거름.
     /// </summary>
-    private static bool IsMutableChar(char c) {
-      return c == '─' || c == '―' || c == '#';
+    private static bool IsSequenceMutableChar(char c) {
+      return c == '─' || c == '―' || c == '#' || c == '\\';
     }
 
     private static bool IsSpaceExceptNewline(char c) {
@@ -162,6 +162,7 @@ namespace Rengex {
         }
         // @은 꿀도르 이스케이프. 가끔가다 사라짐.
         // -은 소스코드 이스케이프. ―로 바뀌거나 함.
+        // \은 중복되면 생략될 때가 있음.
         else if (c == '@' || c == '-' || !Sjis.IsEncodable(c)) {
           buffer.AppendFormat("~x{0:X4}>", (int)c);
         }
@@ -202,7 +203,7 @@ namespace Rengex {
         return true;
       }
       FlushEscapedWhitespace(c, buffer);
-      if (IsMutableChar(c) || IsSpaceExceptNewline(c)) {
+      if (IsSequenceMutableChar(c) || IsSpaceExceptNewline(c)) {
         Space = c;
         Count = 1;
         return true;
