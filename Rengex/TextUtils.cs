@@ -14,7 +14,7 @@ namespace Rengex {
       + @"\u31C0-\u31EF" // CJK Strokes, ㇀-㇯
       + @"\u3200-\u32FF" // Enclosed CJK Letters and Months, ㈀-㋿
       + @"\u3400-\u4DBF\u4E00-\u9FBF\uF900-\uFAFF" // CJK Unified ~, 㐀-䶿一-龿豈-﫿
-      //+ @"\uFF64-\uFF9F" // half-width katakana
+                                                   //+ @"\uFF64-\uFF9F" // half-width katakana
       + @"\uFF00-\uFF9F" // Full-width alphabet, half-width katakana ,＀-ﾟ
       ;
 
@@ -224,6 +224,39 @@ namespace Rengex {
       Position += read;
 
       return read == length ? new string(Buffer, 0, length) : null;
+    }
+  }
+
+  class StringWithCodePage {
+
+    public static bool ReadAllTextAutoDetect(string path, out StringWithCodePage guessed) {
+      string[] encodingNames = new string[] {
+        "utf-8",
+        "shift_jis",
+        "ks_c_5601-1987",
+        "utf-16",
+        "unicodeFFFE",
+      };
+      EncoderFallback efall = EncoderFallback.ExceptionFallback;
+      DecoderFallback dfall = DecoderFallback.ExceptionFallback;
+      guessed = null;
+      foreach (string name in encodingNames) {
+        try {
+          Encoding enc = Encoding.GetEncoding(name, efall, dfall);
+          guessed = new StringWithCodePage(File.ReadAllText(path, enc), enc);
+          return true;
+        }
+        catch (DecoderFallbackException) { }
+      }
+      return false;
+    }
+
+    public string Content { get; set; }
+    public Encoding Encoding { get; set; }
+
+    public StringWithCodePage(string content, Encoding encoding) {
+      Content = content;
+      Encoding = encoding;
     }
   }
 }

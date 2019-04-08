@@ -15,7 +15,12 @@ namespace Rengex {
 
   public class TranslationUnit : JpToKrable {
 
-    static UTF8Encoding UTF8WithBom = new UTF8Encoding(true);
+    public class EncodingDetectionFailureException : ApplicationException{
+      public override string Message => "텍스트 파일의 인코딩을 알 수 없습니다.";
+    }
+
+    static readonly UTF8Encoding UTF8WithBom = new UTF8Encoding(true);
+    static readonly Encoding CP949 = Encoding.GetEncoding(949);
 
     public readonly IProjectStorage Workspace;
     public readonly RegexDotConfiguration DotConfig;
@@ -27,7 +32,10 @@ namespace Rengex {
     }
 
     public void ExtractSourceText() {
-      string txt = ReadAllTextOfMajorEncoding(Workspace.SourcePath);
+      if (!StringWithCodePage.ReadAllTextAutoDetect(Workspace.SourcePath, out StringWithCodePage sourceText)) {
+        throw new EncodingDetectionFailureException();
+      }
+      string txt = sourceText.Content;
       if (txt != null) {
         Config = DotConfig.GetConfiguration(Workspace.SourcePath);
         WriteIntermediates(Config.Matches(txt));
@@ -73,32 +81,15 @@ namespace Rengex {
     public void BuildTranslation() {
       string translation = GetAlternativeTranslationIfExists();
       string destPath = Util.PrecreateDirectory(Workspace.DestinationPath);
-      string sourceTxt = ReadAllTextOfMajorEncoding(Workspace.SourcePath);
+      if (!StringWithCodePage.ReadAllTextAutoDetect(Workspace.SourcePath, out StringWithCodePage sourceText)) {
+        throw new EncodingDetectionFailureException();
+      }
+      Encoding destEnc = sourceText.Encoding.CodePage == 932 ? CP949 : UTF8WithBom;
       using (var meta = new MetadataCsvReader(Workspace.MetadataPath))
       using (StreamReader trans = File.OpenText(translation))
-      using (var source = new StringReader(sourceTxt))
-      using (var dest = new StreamWriter(File.Create(destPath), UTF8WithBom))
+      using (var source = new StringReader(sourceText.Content))
+      using (var dest = new StreamWriter(File.Create(destPath), destEnc))
         CompileTranslation(meta, trans, source, dest);
-    }
-
-    private static string ReadAllTextOfMajorEncoding(string path) {
-      string[] encodingNames = new string[] {
-        "utf-8",
-        "shift_jis",
-        "ks_c_5601-1987",
-        "utf-16",
-        "unicodeFFFE",
-      };
-      EncoderFallback efall = EncoderFallback.ExceptionFallback;
-      DecoderFallback dfall = DecoderFallback.ExceptionFallback;
-      foreach (string name in encodingNames) {
-        try {
-          var enc = Encoding.GetEncoding(name, efall, dfall);
-          return File.ReadAllText(path, enc);
-        }
-        catch (DecoderFallbackException) { }
-      }
-      return null;
     }
 
     private void WriteIntermediates(IEnumerable<TextSpan> spans) {
