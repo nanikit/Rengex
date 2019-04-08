@@ -167,7 +167,7 @@ namespace Rengex {
       if (Translator == null) {
         return;
       }
-      await Operate(() => Task.Run(Translator.ImportTranslation));
+      await Operate(Translator.ImportTranslation);
     }
 
     private async void OnTranslateClick(object sender, RoutedEventArgs e) {
@@ -175,7 +175,7 @@ namespace Rengex {
     }
 
     private async void OnExportClick(object sender, RoutedEventArgs e) {
-      await Operate(() => Task.Run(RenewTranslator().ExportTranslation));
+      await Operate(RenewTranslator().ExportTranslation);
     }
 
     private async void OnOnestopClick(object sender, RoutedEventArgs e) {
