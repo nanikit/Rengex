@@ -36,7 +36,7 @@ namespace Rengex {
     public const string MetadataDirectory = ProjectDirectory + "\\2_meta\\";
     public const string TranslationDirectory = ProjectDirectory + "\\3_translation\\";
     public const string DestinationDirectory = ProjectDirectory + "\\4_result\\";
-    private static readonly Regex RxTransExt = new Regex(@"(.*)\.tran(?:[_-]번역)\.txt$");
+    private static readonly Regex RxTransExt = new Regex(@"(.*)\.tran(?:[_-]번역)?\.txt$");
 
     static CwdDesignator() {
       Directory.CreateDirectory(ProjectDirectory);
