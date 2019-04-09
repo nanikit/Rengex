@@ -42,5 +42,10 @@ namespace Rengex.Tests {
     public void WhitespacePreservationTest3() {
       TestPreservation("\r\n");
     }
+
+    [TestMethod]
+    public void WhitespacePreservationTest4() {
+      TestPreservation("\n\n\n 　\n\n");
+    }
   }
 }

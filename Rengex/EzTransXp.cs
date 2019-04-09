@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -80,16 +81,15 @@ namespace Rengex {
     }
 
     private string TranslateInternal(string jpStr) {
-      var sb = new StringBuilder();
       var escaper = new EzTransEscaper();
-      string e = escaper.Escape(jpStr, sb);
+      string e = escaper.Escape(jpStr);
       IntPtr p = J2kMmntw(0, e);
       if (p == IntPtr.Zero) {
         return null;
       }
       string ret = Marshal.PtrToStringAuto(p);
       J2kFree(p);
-      string ue = ret == null ? null : escaper.Unescape(ret, sb);
+      string ue = ret == null ? null : escaper.Unescape(ret);
       return ue;
     }
 
@@ -123,127 +123,128 @@ namespace Rengex {
 
 
   /// <summary>
-  /// 이지트랜스가 중복/줄 끝 공백 등을 제거하기 때문에 보존하려면 전/후처리 과정이 필요.
+  /// EzTrans trims the string, so pre/post process are required to preserve spaces.
   /// </summary>
+  /// <remarks>
+  /// It can't be a simple text to text function. It will affect translation result
+  /// to replace spaces at the end of line with non spaces.
+  /// </remarks>
   internal class EzTransEscaper {
 
+    enum EscapeKind {
+      None,
+      Symbol,
+      Space
+    }
+
+    private static readonly string Escaper = "~xr>";
     private static readonly EncodingTester Sjis = new EncodingTester(932);
     private static readonly Regex RxDecode =
-      new Regex(@"~x([0-9A-F]{4})>|~X([0-9A-F]{4})([0-9A-F]{3})>|.[^~]*", RegexOptions.Compiled);
+      new Regex(@"(\r\n)|(~xr>)|[\r~]|[^\r~]+", RegexOptions.Compiled);
 
     /// <summary>
-    /// 연속된 상태로 꿀도르를 통과했을 때 변형 가능성이 있는 문자를 거름.
+    /// Filter characters which can be modified if repeated.
     /// </summary>
-    private static bool IsSequenceMutableChar(char c) {
-      return c == '─' || c == '―' || c == '#' || c == '\\';
+    private static bool IsSequenceMutableSymbol(char c) {
+      return "─―#\\".Contains(c);
     }
 
-    private static bool IsSpaceExceptNewline(char c) {
-      return c != '\r' && c != '\n' && char.IsWhiteSpace(c);
-    }
-
-    private int Count;
-    private char Space = '\x1234';
     /// <summary>
-    /// trim되어 날아가기 전에 보존할 맨 처음 부분 \n의 갯수
+    /// Test whether there is a possibility of the single letter falsification 
     /// </summary>
-    private int LeadingLFCount;
+    private static bool IsUnsafeChar(char c) {
+      return c == '@' // Hdor escape character
+        || c == '-' // It may be changed to ―
+        || !Sjis.IsEncodable(c);
+    }
 
-    public string Escape(string notEscaped, StringBuilder buffer) {
 
-      LeadingLFCount = notEscaped.TakeWhile(c => c == '\n').Count();
+    private readonly List<string> preserveds = new List<string>();
+    private readonly StringBuilder buffer = new StringBuilder();
+    private readonly StringBuilder escaping = new StringBuilder();
+    private EscapeKind kind = EscapeKind.None;
 
+    public string Escape(string notEscaped) {
       buffer.Clear();
-      buffer.EnsureCapacity(notEscaped.Length * 2);
-      var white = new EzTransEscaper();
-      foreach (char c in notEscaped.Skip(LeadingLFCount)) {
-        if (white.IsEscaped(c, buffer)) {
+      buffer.EnsureCapacity(notEscaped.Length * 3 / 2);
+
+      foreach (char c in notEscaped) {
+        if (FeedEscape(c)) {
           continue;
         }
-        // @은 꿀도르 이스케이프. 가끔가다 사라짐.
-        // -은 소스코드 이스케이프. ―로 바뀌거나 함.
-        // \은 중복되면 생략될 때가 있음.
-        else if (c == '@' || c == '-' || !Sjis.IsEncodable(c)) {
-          buffer.AppendFormat("~x{0:X4}>", (int)c);
+        else if (IsUnsafeChar(c)) {
+          SetEscapingKind(EscapeKind.None);
+          preserveds.Add(c.ToString());
+          buffer.Append(Escaper);
         }
         else {
           buffer.Append(c);
         }
       }
-      white.FinishEscaping(buffer);
+      FlushSpaces();
 
       return buffer.ToString();
     }
 
-    public string Unescape(string escaped, StringBuilder buffer) {
+    public string Unescape(string escaped) {
       buffer.Clear();
-      buffer.EnsureCapacity(escaped.Length + LeadingLFCount);
 
-      buffer.Append(new string('\n', LeadingLFCount));
-
+      List<string>.Enumerator hydrate = preserveds.GetEnumerator();
       foreach (Match m in RxDecode.Matches(escaped)) {
-        if (m.Groups[1].Success) {
-          buffer.Append((char)Convert.ToInt32(m.Groups[1].Value, 16));
-        }
-        else if (m.Groups[2].Success) {
-          char space = (char)Convert.ToInt32(m.Groups[2].Value, 16);
-          int cnt = Convert.ToInt32(m.Groups[3].Value, 16);
-          buffer.Append(new string(space, cnt));
+        if (m.Groups[1].Success || m.Groups[2].Success) {
+          hydrate.MoveNext();
+          buffer.Append(hydrate.Current);
         }
         else {
           buffer.Append(m.Value);
         }
       }
+
       return buffer.ToString();
     }
 
-    private bool IsEscaped(char c, StringBuilder buffer) {
-      if (c == Space) {
-        Count++;
+    private bool FeedEscape(char c) {
+      if (IsSequenceMutableSymbol(c)) {
+        SetEscapingKind(EscapeKind.Symbol);
+        escaping.Append(c);
         return true;
       }
-      FlushEscapedWhitespace(c, buffer);
-      if (IsSequenceMutableChar(c) || IsSpaceExceptNewline(c)) {
-        Space = c;
-        Count = 1;
+      else if (char.IsWhiteSpace(c)) {
+        SetEscapingKind(EscapeKind.Space);
+        escaping.Append(c);
         return true;
       }
-      return false;
-    }
-
-    /// <summary>
-    /// 보존 중인 공백을 전부 기록
-    /// </summary>
-    /// <param name="c">현재 처리 중인 문자</param>
-    private void FlushEscapedWhitespace(char c, StringBuilder buffer) {
-      if (Count > 1) {
-        WriteDuplicateSpaceEscapeTo(buffer);
+      else {
+        FlushSpaces();
+        return false;
       }
-      else if (Count > 0) {
-        if (c == '\r' || c == '\n') {
-          WriteTrailingSpaceEscapeTo(buffer);
-        }
-        else {
-          buffer.Append(Space);
-        }
+    }
+
+    private void SetEscapingKind(EscapeKind value) {
+      if (kind != value) {
+        FlushSpaces();
+        kind = value;
       }
-      Count = 0;
     }
 
-    private void WriteTrailingSpaceEscapeTo(StringBuilder buffer) {
-      buffer.AppendFormat("~x{0:X4}>", (int)Space);
-    }
+    private void FlushSpaces() {
+      string space = escaping.ToString();
+      escaping.Clear();
 
-    private void WriteDuplicateSpaceEscapeTo(StringBuilder buffer) {
-      buffer.AppendFormat("~X{0:X4}{1:X3}>", (int)Space, Count);
-    }
-
-    /// <summary>
-    /// 보존 중인 공백을 전부 기록. 마지막에 사용.
-    /// </summary>
-    private void FinishEscaping(StringBuilder buffer) {
-      FlushEscapedWhitespace('\r', buffer);
-      FlushEscapedWhitespace('\n', buffer);
+      if (space.Length == 0) {
+        return;
+      }
+      else if (space.Contains('\n')) {
+        buffer.Append("\r\n");
+        preserveds.Add(space);
+      }
+      else if (space.Length == 1) {
+        buffer.Append(space);
+      }
+      else {
+        buffer.Append(Escaper);
+        preserveds.Add(space);
+      }
     }
   }
 }
