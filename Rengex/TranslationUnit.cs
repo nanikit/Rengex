@@ -15,10 +15,6 @@ namespace Rengex {
 
   public class TranslationUnit : JpToKrable {
 
-    public class EncodingDetectionFailureException : ApplicationException{
-      public override string Message => "텍스트 파일의 인코딩을 알 수 없습니다.";
-    }
-
     static readonly UTF8Encoding UTF8WithBom = new UTF8Encoding(true);
     static readonly Encoding CP949 = Encoding.GetEncoding(949);
 
@@ -33,20 +29,12 @@ namespace Rengex {
 
     public void ExtractSourceText() {
       if (!StringWithCodePage.ReadAllTextAutoDetect(Workspace.SourcePath, out StringWithCodePage sourceText)) {
-        throw new EncodingDetectionFailureException();
-      }
-      string txt = sourceText.Content;
-      if (txt != null) {
-        Config = DotConfig.GetConfiguration(Workspace.SourcePath);
-        WriteIntermediates(Config.Matches(txt));
+        // TODO: UI message
         return;
       }
-      else {
-        // TODO: binary files
-        var utf8bom = new byte[] { 0xEF, 0xBB, 0xBF };
-        File.WriteAllBytes(Workspace.MetadataPath, utf8bom);
-        File.WriteAllBytes(Workspace.TranslationPath, utf8bom);
-      }
+      string txt = sourceText.Content;
+      Config = DotConfig.GetConfiguration(Workspace.SourcePath);
+      WriteIntermediates(Config.Matches(txt));
     }
 
     public async Task MachineTranslate(IJp2KrTranslator translator) {
@@ -82,7 +70,8 @@ namespace Rengex {
       string translation = GetAlternativeTranslationIfExists();
       string destPath = Util.PrecreateDirectory(Workspace.DestinationPath);
       if (!StringWithCodePage.ReadAllTextAutoDetect(Workspace.SourcePath, out StringWithCodePage sourceText)) {
-        throw new EncodingDetectionFailureException();
+        File.Copy(Workspace.SourcePath, destPath);
+        return;
       }
       Encoding destEnc = sourceText.Encoding.CodePage == 932 ? CP949 : UTF8WithBom;
       using (var meta = new MetadataCsvReader(Workspace.MetadataPath))
