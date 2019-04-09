@@ -12,8 +12,8 @@ using System.Windows.Input;
 namespace Rengex {
 
   class ConfigTabItemVM {
-    private static Regex LookbehindGroup = ExtendedMatcher.GetExtendedGroupRegex("<[=!]");
-    private static Regex NamedGroup = ExtendedMatcher.GetExtendedGroupRegex(@"<([^>\s]+?)>");
+    private static readonly Regex LookbehindGroup = ExtendedMatcher.GetExtendedGroupRegex("<[=!]");
+    private static readonly Regex NamedGroup = ExtendedMatcher.GetExtendedGroupRegex(@"<(\p{L}+?)>");
 
     private static string ConvertToRegex101Regex(string pattern) {
       string txt = pattern;

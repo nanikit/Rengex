@@ -63,14 +63,23 @@ namespace Rengex {
     private Dictionary<string, Regex> Procedures;
     private TimeSpan Timeout;
 
+    /// <summary>
+    /// Matches to regex pattern &quot;(?prefix...)&quot;
+    /// while ignoring whitespace.
+    /// </summary>
     public static Regex GetExtendedGroupRegex(string prefix) {
       return new Regex(
-        @"\((?<=(?:[^\\]|^)(?:\\\\)*.)\?" + prefix + @"((?>" +
+        // Non-escaped (?
+        @"\((?<=(?:[^\\]|^)(?:\\\\)*.)\?" +
+        // target
+        prefix +
+        // Count open/close paren
+        @"((?>" +
           @"[^()[\]\\]+" +
           @"|\\." +
           @"|(?<open>\()" +
           @"|(?<close-open>\))" +
-          @"|\[(?>\\.|[^]])*\]" +
+          @"|\[(?>\\.|[^\]])*\]" +
         @")*?)\)" +
         @"(?(open)(?!))"
         , RegexOptions.Compiled);
