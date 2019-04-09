@@ -39,7 +39,7 @@ namespace Rengex {
 
     public EzTransXp(string eztPath = null, int msDelay = 200) {
       if (string.IsNullOrWhiteSpace(eztPath)) {
-        eztPath = GetEztransPathFromReg();
+        eztPath = GetEztransDirFromReg();
       }
       if (eztPath == null || !File.Exists(GetDllPath(eztPath))) {
         throw new EzTransNotFoundException();
@@ -52,9 +52,9 @@ namespace Rengex {
       return chk?.Contains("OK") ?? false;
     }
 
-    public static string GetEztransPathFromReg() {
+    public static string GetEztransDirFromReg() {
       RegistryKey key = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32);
-      return key.GetValue(@"Software\ChangShin\ezTrans\FilePath") as string;
+      return key.OpenSubKey(@"Software\ChangShin\ezTrans").GetValue(@"FilePath") as string;
     }
 
     private async Task LoadNativeDll(string eztPath, int msDelay) {
