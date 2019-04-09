@@ -302,6 +302,7 @@ namespace Rengex {
     }
 
     public async override Task Process() {
+      SetProgress(TranslationPhase.Import, 0);
       Translation.ExtractSourceText();
       SetProgress(TranslationPhase.Translation, 10);
 
