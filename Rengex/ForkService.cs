@@ -339,12 +339,12 @@ namespace Rengex {
     }
 
     public async Task<string> Translate(string source, IJp2KrLogger progress) {
+      progress?.OnStart(source.Length);
+
       List<string> splits = ChunkByLines(source).ToList();
-      List<Task<string>> splitTasks = splits.Select(x => Backend.Translate(x)).ToList();
+      List<Task<string>> splitTasks = splits.Select(Backend.Translate).ToList();
       var runnings = new List<Task<string>>(splitTasks);
       int translatedLength = 0;
-
-      progress?.OnStart(source.Length);
 
       while (runnings.Count != 0) {
         Task<string> done = await Task.WhenAny(runnings).ConfigureAwait(false);

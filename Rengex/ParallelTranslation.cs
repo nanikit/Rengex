@@ -185,25 +185,27 @@ namespace Rengex {
   }
 
   public enum TranslationPhase {
-    Import, Translation, Export, Complete, Error
+    Init, Import, Translation, Export, Complete, Error
   }
 
   abstract class Jp2KrWork {
 
     private static string PhaseToString(TranslationPhase phase) {
       switch (phase) {
-        case TranslationPhase.Complete:
-          return "완료";
-        case TranslationPhase.Error:
-          return "에러 - ";
-        case TranslationPhase.Export:
-          return "병합 중…";
-        case TranslationPhase.Import:
-          return "추출 중…";
-        case TranslationPhase.Translation:
-          return "번역 중…";
-        default:
-          return "";
+      case TranslationPhase.Complete:
+        return "완료";
+      case TranslationPhase.Error:
+        return "에러 - ";
+      case TranslationPhase.Export:
+        return "병합 중…";
+      case TranslationPhase.Import:
+        return "추출 중…";
+      case TranslationPhase.Translation:
+        return "번역 중…";
+      case TranslationPhase.Init:
+        return "대기 중…";
+      default:
+        return "";
       }
     }
 
@@ -211,18 +213,19 @@ namespace Rengex {
       return Util.GetEllipsisPath(unit.Workspace.RelativePath, 30);
     }
 
-    protected TranslationUnit Translation;
-
     public string EllipsisPath { get; private set; }
-
-    public TranslationPhase Phase;
 
     public LabelProgressVM Progress { get; private set; }
 
+    public TranslationPhase Phase { get; set; }
+
+    protected TranslationUnit translation;
+
     public Jp2KrWork(TranslationUnit translation) {
-      Translation = translation;
-      EllipsisPath = GetEllipsisPath(Translation);
+      this.translation = translation;
+      EllipsisPath = GetEllipsisPath(this.translation);
       Progress = new LabelProgressVM();
+      SetProgress(TranslationPhase.Init, 0);
     }
 
     public abstract Task Process();
@@ -247,7 +250,7 @@ namespace Rengex {
     public ImportJp2Kr(TranslationUnit tu) : base(tu) { }
 
     public override Task Process() {
-      Translation.ExtractSourceText();
+      translation.ExtractSourceText();
       SetProgress(TranslationPhase.Complete, 100);
       return Task.CompletedTask;
     }
@@ -258,71 +261,73 @@ namespace Rengex {
 
     public override Task Process() {
       SetProgress(TranslationPhase.Export, 0);
-      Translation.BuildTranslation();
+      translation.BuildTranslation();
       SetProgress(TranslationPhase.Complete, 100);
       return Task.CompletedTask;
     }
   }
 
   class TranslateJp2Kr : Jp2KrWork, IJp2KrLogger {
-    private IJp2KrTranslator Translator;
-    private int TranslationSize;
+    private readonly IJp2KrTranslator translator;
+    private int translationSize;
 
     public TranslateJp2Kr(TranslationUnit tu, IJp2KrTranslator engine) : base(tu) {
-      Translator = engine;
+      translator = engine;
     }
 
     public async override Task Process() {
       Phase = TranslationPhase.Translation;
 
-      var translator = new SplitTranslater(Translator, this);
-      await Translation.MachineTranslate(translator).ConfigureAwait(false);
+      var splitter = new SplitTranslater(translator, this);
+      await translation.MachineTranslate(splitter).ConfigureAwait(false);
 
       SetProgress(TranslationPhase.Complete, 100);
     }
 
     public void OnStart(int total) {
-      TranslationSize = total;
+      translationSize = total;
+      OnProgress(0);
     }
 
     public void OnProgress(int current) {
-      double ratio = (double)current / TranslationSize;
+      double ratio = (double)current / translationSize;
       double val = (double.IsNaN(ratio) ? 1 : ratio) * 100;
-      string desc = $"({current}/{TranslationSize})";
+      string desc = $"({current}/{translationSize})";
       SetProgress(TranslationPhase.Translation, val, desc);
     }
   }
 
   class OnestopJp2Kr : Jp2KrWork, IJp2KrLogger {
-    private IJp2KrTranslator Translator;
-    private int TranslationSize;
+    private IJp2KrTranslator translator;
+    private int translationSize;
 
     public OnestopJp2Kr(TranslationUnit tu, IJp2KrTranslator engine) : base(tu) {
-      Translator = engine;
+      translator = engine;
     }
 
     public async override Task Process() {
       SetProgress(TranslationPhase.Import, 0);
-      Translation.ExtractSourceText();
-      SetProgress(TranslationPhase.Translation, 10);
+      translation.ExtractSourceText();
 
-      var translator = new SplitTranslater(Translator, this);
-      await Translation.MachineTranslate(translator).ConfigureAwait(false);
+      SetProgress(TranslationPhase.Translation, 10);
+      var splitter = new SplitTranslater(translator, this);
+      await translation.MachineTranslate(splitter).ConfigureAwait(false);
 
       SetProgress(TranslationPhase.Export, 90);
-      Translation.BuildTranslation();
+      translation.BuildTranslation();
 
       SetProgress(TranslationPhase.Complete, 100);
     }
 
     public void OnStart(int total) {
-      TranslationSize = total;
+      translationSize = total;
+      OnProgress(0);
     }
 
     public void OnProgress(int current) {
-      double ratio = (double)current / TranslationSize;
+      double ratio = (double)current / translationSize;
       double val = (double.IsNaN(ratio) ? 1 : ratio) * 80 + 10;
-      string desc = $"({current}/{TranslationSize})";
+      string desc = $"({current}/{translationSize})";
       SetProgress(TranslationPhase.Translation, val, desc);
     }
   }
