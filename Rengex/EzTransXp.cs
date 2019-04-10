@@ -137,10 +137,10 @@ namespace Rengex {
       Space
     }
 
-    private static readonly string Escaper = "~xr>";
+    private static readonly string Escaper = "[xr}";
     private static readonly EncodingTester Sjis = new EncodingTester(932);
     private static readonly Regex RxDecode =
-      new Regex(@"(\r\n)|(~xr>)|[\r~]|[^\r~]+", RegexOptions.Compiled);
+      new Regex(@"(\r\n)|(\[xr})|[\r\[]|[^\r\[]+", RegexOptions.Compiled);
 
     /// <summary>
     /// Filter characters which can be modified if repeated.

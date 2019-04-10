@@ -11,10 +11,10 @@ using System.Threading.Tasks;
 namespace Rengex.Tests {
   [TestClass]
   public class EzTransXpTest {
-    EzTransXp Trans = new EzTransXp();
+    readonly EzTransXp trans = new EzTransXp();
 
     private void TestPreservation(string str) {
-      Task<string> t = Trans.Translate(str);
+      Task<string> t = trans.Translate(str);
       t.Wait();
       Assert.AreEqual(str, t.Result);
     }
