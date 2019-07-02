@@ -55,7 +55,7 @@ namespace Rengex {
 
     public static string GetEztransDirFromReg() {
       RegistryKey key = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32);
-      return key.OpenSubKey(@"Software\ChangShin\ezTrans").GetValue(@"FilePath") as string;
+      return key.OpenSubKey(@"Software\ChangShin\ezTrans")?.GetValue(@"FilePath") as string;
     }
 
     private async Task LoadNativeDll(string eztPath, int msDelay) {

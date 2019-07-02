@@ -1,10 +1,8 @@
 ﻿using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,7 +10,8 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace Rengex {
+namespace Rengex
+{
   /// <summary>
   /// Interaction logic for MainWindow.xaml
   /// </summary>
@@ -263,6 +262,10 @@ namespace Rengex {
         }
         Properties.Settings.Default.EzTransDir = Path.GetDirectoryName(ofd.FileName);
         Properties.Settings.Default.Save();
+
+        TbLog.Document.Blocks.Remove(container);
+        Task retry = Operate(task);
+        await retry.ConfigureAwait(false);
       }
       catch (Exception e) {
         if (Translator.Exceptions.Count == 0) {
