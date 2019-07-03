@@ -9,9 +9,9 @@
   <Window.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
-        <local:FlatDictionary Key="Import" DesignSource="pack://application,,,/res/Import.xaml"/>
-        <local:FlatDictionary Key="Export" DesignSource="pack://application,,,/res/Export.xaml"/>
-        <local:FlatDictionary Key="Flask" DesignSource="pack://application,,,/res/Flask.xaml"/>
+        <local:FlatDictionary Key="Import" DesignSource="pack://application,,,/View/Asset/Import.xaml"/>
+        <local:FlatDictionary Key="Export" DesignSource="pack://application,,,/View/Asset/Export.xaml"/>
+        <local:FlatDictionary Key="Flask" DesignSource="pack://application,,,/View/Asset/Flask.xaml"/>
       </ResourceDictionary.MergedDictionaries>
       <Style TargetType="Button">
         <Setter Property="Background" Value="#fafafa"/>
