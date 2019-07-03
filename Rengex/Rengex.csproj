@@ -71,8 +71,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="BinaryExtract.cs" />
-    <Compile Include="Conception.cs" />
     <Compile Include="DotConfigurator.cs" />
     <Compile Include="EzTransXp.cs" />
     <Compile Include="ForkService.cs" />

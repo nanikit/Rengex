@@ -28,7 +28,7 @@ namespace Rengex {
     }
   }
 
-  public class TextSpan : Extractable<string>, Extractable {
+  public class TextSpan {
 
     public string Title { get; private set; }
     public long Offset { get; set; }
