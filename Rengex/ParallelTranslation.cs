@@ -1,18 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Windows.Data;
-using System.Windows.Markup;
 using System.Windows.Media;
-using System.Windows.Threading;
 using static Rengex.SplitTranslater;
 
-namespace Rengex {
+namespace Rengex
+{
 
   public class Jp2KrDesignVM : Jp2KrTranslationVM {
     public class TestLabelProgressVM : ILabelProgressVM {

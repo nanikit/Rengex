@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Rengex {
@@ -41,25 +38,12 @@ namespace Rengex {
       if (!File.Exists(Workspace.TranslationPath)) {
         ExtractSourceText();
       }
+      if (!File.Exists(Workspace.TranslationPath)) {
+        return;
+      }
       string jp = File.ReadAllText(Workspace.TranslationPath);
       string kr = await translator.Translate(jp).ConfigureAwait(false);
       File.WriteAllText(GetAlternativeTranslationPath(), kr);
-    }
-
-    private string PreprocessTranslation() {
-      Config = DotConfig.GetConfiguration(Workspace.SourcePath);
-      var sb = new StringBuilder();
-      using (var meta = new MetadataCsvReader(Workspace.MetadataPath))
-      using (StreamReader trans = File.OpenText(Workspace.TranslationPath)) {
-        var sub = new SpanPairReader(trans);
-
-        foreach (TextSpan span in meta.GetSpans()) {
-          string txt = sub.ReadCorrespondingSpan(span);
-          sb.AppendLine(txt);
-        }
-      }
-
-      return sb.ToString();
     }
 
     public void MachineTranslate() {
@@ -70,7 +54,7 @@ namespace Rengex {
       string translation = GetAlternativeTranslationIfExists();
       string destPath = Util.PrecreateDirectory(Workspace.DestinationPath);
       if (!StringWithCodePage.ReadAllTextAutoDetect(Workspace.SourcePath, out StringWithCodePage sourceText)) {
-        File.Copy(Workspace.SourcePath, destPath);
+        File.Copy(Workspace.SourcePath, destPath, true);
         return;
       }
       Encoding destEnc = sourceText.Encoding.CodePage == 932 ? CP949 : UTF8WithBom;

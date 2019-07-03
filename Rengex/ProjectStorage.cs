@@ -31,6 +31,7 @@ namespace Rengex {
 
   class CwdDesignator : IProjectStorage {
 
+    // TODO: Remove separator suffix
     public const string ProjectDirectory = "rengex";
     public const string SourceDirectory = ProjectDirectory + "\\1_source\\";
     public const string MetadataDirectory = ProjectDirectory + "\\2_meta\\";
@@ -143,7 +144,6 @@ namespace Rengex {
 
     public static List<CwdDesignator> WalkForSources(string path) {
       var units = new List<CwdDesignator>();
-      string absolute = Path.GetFullPath(path);
       if (Directory.Exists(path)) {
         string parent = Path.GetDirectoryName(path);
         var files = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories);
@@ -153,7 +153,7 @@ namespace Rengex {
           }
         }
       }
-      else {
+      else if (File.Exists(path)) {
         string dir = Path.GetDirectoryName(path);
         units.Add(new CwdDesignator(dir, path));
       }
