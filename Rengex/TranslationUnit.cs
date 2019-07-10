@@ -4,13 +4,13 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Rengex {
-  interface JpToKrable {
+  interface IJpToKrable {
     void ExtractSourceText();
     Task MachineTranslate(IJp2KrTranslator translator);
     void BuildTranslation();
   }
 
-  public class TranslationUnit : JpToKrable {
+  public class TranslationUnit : IJpToKrable {
 
     static readonly UTF8Encoding UTF8WithBom = new UTF8Encoding(true);
     static readonly Encoding CP949 = Encoding.GetEncoding(949);
@@ -133,8 +133,8 @@ namespace Rengex {
   /// ReadLine을 쓰면 CR, LF, CR/LF을 구분할 수 없게 되어 수작업함.
   /// </summary>
   internal class SpanPairReader {
-    private StringBuilder Buffer = new StringBuilder();
-    private TextReader Reader;
+    private readonly StringBuilder Buffer = new StringBuilder();
+    private readonly TextReader Reader;
 
     public SpanPairReader(TextReader reader) {
       Reader = reader;

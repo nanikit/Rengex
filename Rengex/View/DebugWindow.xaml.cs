@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Input;
 
 namespace Rengex {
 
@@ -61,7 +57,7 @@ namespace Rengex {
   /// Interaction logic for DebugWindow.xaml
   /// </summary>
   public partial class DebugWindow : Window {
-    private RegexDotConfiguration RegexDot;
+    private readonly RegexDotConfiguration RegexDot;
 
     public DebugWindow(RegexDotConfiguration rdot) {
       InitializeComponent();

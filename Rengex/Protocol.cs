@@ -14,9 +14,10 @@ namespace Rengex {
     }
 
     public static async Task WriteObjAsync(this Stream s, object o, CancellationToken token) {
-      MemoryStream ms = GetPrefixedSerialStream(o);
-      token.ThrowIfCancellationRequested();
-      await ms.CopyToAsync(s, 8192, token);
+      using (MemoryStream ms = GetPrefixedSerialStream(o)) {
+        token.ThrowIfCancellationRequested();
+        await ms.CopyToAsync(s, 8192, token);
+      }
     }
 
     // async is not useful for MemoryStream: http://stackoverflow.com/a/20805616
@@ -31,10 +32,11 @@ namespace Rengex {
     }
 
     public static byte[] GetPrefixedSerial(object o) {
-      MemoryStream ms = GetPrefixedSerialStream(o);
-      byte[] buf = new byte[ms.Length];
-      ms.Read(buf, 0, Convert.ToInt32(ms.Length));
-      return buf;
+      using (MemoryStream ms = GetPrefixedSerialStream(o)) {
+        byte[] buf = new byte[ms.Length];
+        ms.Read(buf, 0, Convert.ToInt32(ms.Length));
+        return buf;
+      }
     }
 
     public static async Task<T> ReadObjAsync<T>(this Stream s, Action<double> progress = null) {
@@ -43,7 +45,9 @@ namespace Rengex {
       int len = (int)BitConverter.ToInt64(lenHeader, 0);
       byte[] buf = await s.ReadLenAsync(len, progress);
 
-      return (T)Formatter.Deserialize(new MemoryStream(buf));
+      using (var ms = new MemoryStream(buf)) {
+        return (T)Formatter.Deserialize(ms);
+      }
     }
 
     // CancellationToken does nothing for NetworkStream.ReadAsync

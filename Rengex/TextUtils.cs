@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -21,23 +20,6 @@ namespace Rengex {
     public static bool Match(this Regex rx, string input, int index, out Match m) {
       m = rx.Match(input, index);
       return m.Success;
-    }
-
-
-    static int BOMLength(byte[] buffer) {
-      byte[][] boms = new byte[][] {
-        new byte[] {0xEF, 0xBB, 0xBF}, // UTF8
-        new byte[] {0xFE, 0xFF}, // UTF16BE
-        new byte[] {0xFF, 0xFE}, // UTF16LE
-        new byte[] {0x00, 0x00, 0xFE, 0xFF}, // UTF32BE
-        new byte[] {0xFF, 0xFE, 0x00, 0x00}, // UTF32LE
-      };
-      foreach (byte[] bom in boms) {
-        if (bom.SequenceEqual(buffer.Take(bom.Length))) {
-          return bom.Length;
-        }
-      }
-      return 0;
     }
 
     public static int Count(this string str, char ch) {
@@ -172,9 +154,9 @@ namespace Rengex {
 
   public class EncodingTester {
 
-    private Encoder Encode;
-    private char[] Chars = new char[1];
-    private byte[] Bytes = new byte[8];
+    private readonly Encoder Encode;
+    private readonly char[] Chars = new char[1];
+    private readonly byte[] Bytes = new byte[8];
 
     public EncodingTester(int codepage) {
       Encode = TextUtils.GetSOHFallbackEncoding(codepage).GetEncoder();
@@ -182,8 +164,7 @@ namespace Rengex {
 
     public bool IsEncodable(char ch) {
       Chars[0] = ch;
-      Encode.Convert(Chars, 0, 1, Bytes, 0, 8, false,
-        out int cUsed, out int bUsed, out bool completed);
+      Encode.Convert(Chars, 0, 1, Bytes, 0, 8, false, out _, out _, out _);
       return Chars[0] != '\x01';
     }
   }
@@ -191,7 +172,7 @@ namespace Rengex {
   class CharCountingReader {
     public int Position { get; private set; }
 
-    private TextReader Base;
+    private readonly TextReader Base;
     private char[] Buffer;
 
     public CharCountingReader(TextReader reader, char[] buffer = null) {
@@ -242,7 +223,7 @@ namespace Rengex {
       guessed = null;
       foreach (string name in encodingNames) {
         try {
-          Encoding enc = Encoding.GetEncoding(name, efall, dfall);
+          var enc = Encoding.GetEncoding(name, efall, dfall);
           guessed = new StringWithCodePage(File.ReadAllText(path, enc), enc);
           return true;
         }

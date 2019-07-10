@@ -7,8 +7,8 @@ using System.Text.RegularExpressions;
 namespace Rengex {
 
   public class RegexConfiguration {
-    private MatchConfig Matcher;
-    private ReplaceConfig Replacer;
+    private readonly MatchConfig Matcher;
+    private readonly ReplaceConfig Replacer;
 
     internal RegexConfiguration(MatchConfig matcher, ReplaceConfig replacer) {
       Matcher = matcher;
@@ -59,8 +59,8 @@ namespace Rengex {
         | RegexOptions.ExplicitCapture
         | RegexOptions.IgnorePatternWhitespace;
 
-    private Regex Root;
-    private Dictionary<string, Regex> Procedures;
+    private readonly Regex Root;
+    private readonly Dictionary<string, Regex> Procedures;
     private TimeSpan Timeout;
 
     /// <summary>
@@ -145,7 +145,7 @@ namespace Rengex {
     private Dictionary<string, Regex> GetProcedures(string pat) {
       var dict = new Dictionary<string, Regex>();
       string p = pat;
-      for (int idx = 0; ExtendedMatcher.RxProcGroup.Match(p, idx, out Match m); idx = m.Index + 1) {
+      for (int idx = 0; RxProcGroup.Match(p, idx, out Match m); idx = m.Index + 1) {
         string name = m.Groups["1"].Value;
         string value = m.Groups["2"].Value;
         try {
@@ -170,7 +170,7 @@ namespace Rengex {
   class MatchConfig : IDotConfig<MatchConfig> {
 
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
-    ExtendedMatcher Matcher;
+    readonly ExtendedMatcher Matcher;
 
     public Func<string, MatchConfig> ConfigResolver { set { } }
 
@@ -205,7 +205,7 @@ namespace Rengex {
   /// </summary>
   public class ReplaceConfig : IDotConfig<ReplaceConfig> {
 
-    interface Replacer {
+    interface IReplacer {
       string Preprocess(string meta, string trans);
       string Postprocess(string meta, string trans);
     }
@@ -228,8 +228,8 @@ namespace Rengex {
       }
     }
 
-    class PreprocessPattern : Replacer {
-      ReplacePattern Pat;
+    class PreprocessPattern : IReplacer {
+      readonly ReplacePattern Pat;
 
       public PreprocessPattern(ReplacePattern pat) {
         Pat = pat;
@@ -246,8 +246,8 @@ namespace Rengex {
       }
     }
 
-    class PostprocessPattern : Replacer {
-      ReplacePattern Pat;
+    class PostprocessPattern : IReplacer {
+      readonly ReplacePattern Pat;
 
       public PostprocessPattern(ReplacePattern pat) {
         Pat = pat;
@@ -264,7 +264,7 @@ namespace Rengex {
       }
     }
 
-    class Import : Replacer {
+    class Import : IReplacer {
       public ReplaceConfig Includer;
 
       public string FullPath;
@@ -293,8 +293,8 @@ namespace Rengex {
       }
     }
 
-    private string FullPath;
-    private List<Replacer> Replacers;
+    private readonly string FullPath;
+    private readonly List<IReplacer> Replacers;
 
     Func<string, ReplaceConfig> ConfigResolver;
 
@@ -303,7 +303,7 @@ namespace Rengex {
     }
 
     public ReplaceConfig() {
-      Replacers = new List<Replacer>();
+      Replacers = new List<IReplacer>();
     }
 
     public ReplaceConfig(string replaceConfigPath) {
@@ -323,7 +323,7 @@ namespace Rengex {
 
     public string PreReplaceInternal(string meta, string src) {
       string ret = src;
-      foreach (Replacer rule in Replacers) {
+      foreach (IReplacer rule in Replacers) {
         ret = rule.Preprocess(meta, ret);
       }
       return ret;
@@ -342,7 +342,7 @@ namespace Rengex {
 
     private string PostReplaceInternal(string meta, string trans) {
       string ret = trans;
-      foreach (Replacer rule in Replacers) {
+      foreach (IReplacer rule in Replacers) {
         ret = rule.Postprocess(meta, ret);
       }
       return ret;
@@ -350,7 +350,7 @@ namespace Rengex {
 
     class ReplaceConfigLoader {
       public readonly ReplaceConfig ReplaceConfig;
-      public readonly List<Replacer> Rules;
+      public readonly List<IReplacer> Rules;
 
       IEnumerator<string> Line;
 
@@ -359,11 +359,11 @@ namespace Rengex {
         Rules = LoadConfig();
       }
 
-      private List<Replacer> LoadConfig() {
+      private List<IReplacer> LoadConfig() {
         string[] lines = File.ReadAllLines(ReplaceConfig.FullPath);
         Line = lines.AsEnumerable().GetEnumerator();
 
-        var rules = new List<Replacer>();
+        var rules = new List<IReplacer>();
         while (Line.MoveNext()) {
           if (IsCommentLine(Line.Current)) {
             continue;
@@ -372,7 +372,7 @@ namespace Rengex {
             rules.Add(import);
           }
           else {
-            Replacer rule = ReadPatternLines();
+            IReplacer rule = ReadPatternLines();
             rules.Add(rule);
           }
         }
@@ -396,7 +396,7 @@ namespace Rengex {
         return true;
       }
 
-      private Replacer ReadPatternLines() {
+      private IReplacer ReadPatternLines() {
         string patLine = Line.Current;
         ExpectReplaceLine(patLine);
 
@@ -404,7 +404,7 @@ namespace Rengex {
         string pat = isPrePattern ? patLine.Substring(4) : patLine;
         var rp = new ReplacePattern(pat, Line.Current);
         var rule = isPrePattern
-          ? new PreprocessPattern(rp) as Replacer
+          ? new PreprocessPattern(rp) as IReplacer
           : new PostprocessPattern(rp);
         return rule;
       }

@@ -54,7 +54,7 @@ namespace Rengex {
     /// It should be called only in the property setter.
     /// </summary>
     protected void Set<T>(ref T member, T value, [CallerMemberName] string name = null) {
-      if (Object.Equals(member, value)) {
+      if (Equals(member, value)) {
         return;
       }
       member = value;
@@ -74,8 +74,8 @@ namespace Rengex {
       public CancellationTokenRegistration Cancelling;
     }
 
-    private ConcurrentQueue<T> DataQueue = new ConcurrentQueue<T>();
-    private ConcurrentQueue<Client> Clients = new ConcurrentQueue<Client>();
+    private readonly ConcurrentQueue<T> DataQueue = new ConcurrentQueue<T>();
+    private readonly ConcurrentQueue<Client> Clients = new ConcurrentQueue<Client>();
 
     public int PendingSize => DataQueue.Count;
 

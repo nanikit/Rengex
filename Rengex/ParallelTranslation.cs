@@ -39,8 +39,8 @@ namespace Rengex
 
     public LabelProgressVM Progress { get; private set; }
 
-    private int WorkerCount;
-    private RegexDotConfiguration DotConfig;
+    private readonly int WorkerCount;
+    private readonly RegexDotConfiguration DotConfig;
     private List<TranslationUnit> Translations;
     private string WorkKind;
 
@@ -274,8 +274,9 @@ namespace Rengex
     public async override Task Process() {
       Phase = TranslationPhase.Translation;
 
-      var splitter = new SplitTranslater(translator, this);
-      await translation.MachineTranslate(splitter).ConfigureAwait(false);
+      using (var splitter = new SplitTranslater(translator, this)) {
+        await translation.MachineTranslate(splitter).ConfigureAwait(false);
+      }
 
       SetProgress(TranslationPhase.Complete, 100);
     }
@@ -294,7 +295,7 @@ namespace Rengex
   }
 
   class OnestopJp2Kr : Jp2KrWork, IJp2KrLogger {
-    private IJp2KrTranslator translator;
+    private readonly IJp2KrTranslator translator;
     private int translationSize;
 
     public OnestopJp2Kr(TranslationUnit tu, IJp2KrTranslator engine) : base(tu) {
@@ -306,8 +307,9 @@ namespace Rengex
       translation.ExtractSourceText();
 
       SetProgress(TranslationPhase.Translation, 10);
-      var splitter = new SplitTranslater(translator, this);
-      await translation.MachineTranslate(splitter).ConfigureAwait(false);
+      using (var splitter = new SplitTranslater(translator, this)) {
+        await translation.MachineTranslate(splitter).ConfigureAwait(false);
+      }
 
       SetProgress(TranslationPhase.Export, 90);
       translation.BuildTranslation();

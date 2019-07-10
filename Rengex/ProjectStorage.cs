@@ -164,12 +164,6 @@ namespace Rengex {
       return file.EndsWith(".match.txt") || file.EndsWith(".repla.txt");
     }
 
-    private static bool IsPathInSource(string path) {
-      string absolute = Path.GetFullPath(path);
-      string projectPath = Path.GetFullPath(ProjectDirectory);
-      return absolute.StartsWith(projectPath);
-    }
-
     private void CopyToSourceDirectory(string path) {
       if (File.Exists(SourcePath)) {
         return;

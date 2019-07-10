@@ -32,10 +32,11 @@ namespace Rengex {
 
     public event FileSystemEventHandler Commited = delegate { };
 
-    private MyBufferBlock<FileSystemEventArgs> ChangeQueue = new MyBufferBlock<FileSystemEventArgs>();
-    private CancellationTokenSource Cancel = new CancellationTokenSource();
-    private Task TimeoutFilter;
-    private int MsTimeout;
+    private readonly MyBufferBlock<FileSystemEventArgs> ChangeQueue
+      = new MyBufferBlock<FileSystemEventArgs>();
+    private readonly CancellationTokenSource Cancel = new CancellationTokenSource();
+    private readonly Task TimeoutFilter;
+    private readonly int MsTimeout;
 
     public FileTimeoutWatcher(int msTimeout) {
       MsTimeout = msTimeout;
@@ -93,6 +94,7 @@ namespace Rengex {
     protected void Dispose(bool disposing) {
       if (disposing) {
         Cancel.Cancel();
+        Cancel.Dispose();
       }
     }
   }
@@ -110,12 +112,13 @@ namespace Rengex {
     /// <summary>
     /// 설정 변경을 탐지하기 위한 감시자.
     /// </summary>
-    private FileTimeoutWatcher TimeoutWatcher;
+    private readonly FileTimeoutWatcher TimeoutWatcher;
 
-    private T ConfigBuilder;
-    private string RootPath;
-    private List<Region> Regions = new List<Region>();
-    private Dictionary<string, Region> RegionDict = new Dictionary<string, Region>();
+    private readonly T ConfigBuilder;
+    private readonly string RootPath;
+    private readonly List<Region> Regions = new List<Region>();
+    private readonly Dictionary<string, Region> RegionDict
+      = new Dictionary<string, Region>();
 
     public class Region : IComparer<Region> {
       public string Prefix;
@@ -163,9 +166,10 @@ namespace Rengex {
     }
 
     private FileTimeoutWatcher GetTimeoutWatcher() {
-      var watcher = new FileSystemWatcher(RootPath, "*" + ConfigBuilder.GetExtension());
-      watcher.IncludeSubdirectories = true;
-      watcher.EnableRaisingEvents = true;
+      var watcher = new FileSystemWatcher(RootPath, "*" + ConfigBuilder.GetExtension()) {
+        IncludeSubdirectories = true,
+        EnableRaisingEvents = true
+      };
       return new FileTimeoutWatcher(100, watcher);
     }
 
@@ -248,8 +252,9 @@ namespace Rengex {
     private void AddRegion(string path) {
       T cfg = ConfigBuilder.CreateFromFile(path);
       cfg.ConfigResolver = ResolveConfig;
-      var region = new Region(path, cfg);
-      region.Watcher = new FileSystemWatcher(Path.GetDirectoryName(path), Path.GetFileName(path));
+      var region = new Region(path, cfg) {
+        Watcher = new FileSystemWatcher(Path.GetDirectoryName(path), Path.GetFileName(path))
+      };
       region.Watcher.EnableRaisingEvents = true;
       TimeoutWatcher.Subscribe(region.Watcher);
       int idx = Regions.BinarySearch(region, region);
@@ -283,8 +288,8 @@ namespace Rengex {
     public event Action<FileSystemEventArgs> ConfigReloaded = delegate { };
     public event Action<FileSystemEventArgs, Exception> ConfigFaulted = delegate { };
 
-    private DotConfigurator<MatchConfig> Matcher;
-    private DotConfigurator<ReplaceConfig> Replacer;
+    private readonly DotConfigurator<MatchConfig> Matcher;
+    private readonly DotConfigurator<ReplaceConfig> Replacer;
 
     public IEnumerable<string> RegionPaths {
       get {

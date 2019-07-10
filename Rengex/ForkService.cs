@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 namespace Rengex {
 
   public class ChildForkTranslator {
-    int MsDelay;
+    readonly int MsDelay;
     IJp2KrTranslator Translator;
-    NamedPipeClientStream PipeClient;
+    readonly NamedPipeClientStream PipeClient;
 
     public ChildForkTranslator(int msDelay, string pipeName = ParentForkTranslator.DefaultPipeName) {
       MsDelay = msDelay;
@@ -50,7 +50,7 @@ namespace Rengex {
     /// </summary>
     int MsInitDelay = 200;
     Process Child;
-    string PipeName;
+    readonly string PipeName;
     NamedPipeServerStream PipeServer;
 
     public ParentForkTranslator(string pipeName = DefaultPipeName) {
@@ -150,11 +150,11 @@ namespace Rengex {
   }
 
   class ForkTranslator : IJp2KrTranslator {
-    int PoolSize;
-    Task ManagerTask;
-    List<Task> Workers = new List<Task>();
-    List<IJp2KrTranslator> Translators = new List<IJp2KrTranslator>();
-    MyBufferBlock<Job> Jobs = new MyBufferBlock<Job>();
+    readonly int PoolSize;
+    readonly Task ManagerTask;
+    readonly List<Task> Workers = new List<Task>();
+    readonly List<IJp2KrTranslator> Translators = new List<IJp2KrTranslator>();
+    readonly MyBufferBlock<Job> Jobs = new MyBufferBlock<Job>();
     CancellationTokenSource Cancel = new CancellationTokenSource();
 
     public ForkTranslator(int poolSize) {
@@ -226,7 +226,7 @@ namespace Rengex {
 
     private async Task<Job> GetJobOrDefault() {
       Task<Job> dispatch = Jobs.ReceiveAsync(Cancel.Token);
-      Task t = await Task.WhenAny(dispatch).ConfigureAwait(false);
+      _ = await Task.WhenAny(dispatch).ConfigureAwait(false);
       if (Cancel?.IsCancellationRequested ?? true) {
         return null;
       }
@@ -250,8 +250,8 @@ namespace Rengex {
     }
 
     private async Task ScheduleAfterCompletion(Job job) {
-      Task abort = Task.Delay(TimeSpan.FromDays(10), Cancel.Token);
-      Task<Task> seats = Task.WhenAny(Workers);
+      var abort = Task.Delay(TimeSpan.FromDays(10), Cancel.Token);
+      var seats = Task.WhenAny(Workers);
       Task fin = await Task.WhenAny(abort, seats).ConfigureAwait(false);
       if (fin == abort) {
         return;
@@ -278,6 +278,7 @@ namespace Rengex {
       if (disposing) {
         if (Cancel != null) {
           Cancel.Cancel();
+          Cancel.Dispose();
           Cancel = null;
         }
       }
@@ -326,8 +327,8 @@ namespace Rengex {
       }
     }
 
-    private IJp2KrTranslator Backend;
-    private IJp2KrLogger Logger;
+    private readonly IJp2KrTranslator Backend;
+    private readonly IJp2KrLogger Logger;
 
     public SplitTranslater(IJp2KrTranslator translator, IJp2KrLogger progress) {
       Backend = translator;

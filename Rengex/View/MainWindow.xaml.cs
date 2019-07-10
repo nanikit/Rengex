@@ -46,7 +46,7 @@ namespace Rengex
     }
 
     private DebugWindow DebugWindow =>
-      App.Current.Windows.OfType<DebugWindow>().FirstOrDefault();
+      Application.Current.Windows.OfType<DebugWindow>().FirstOrDefault();
 
     private void OnFlaskClick(object sender, RoutedEventArgs e) {
       ShowRegexDebugWindow();
@@ -155,9 +155,10 @@ namespace Rengex
     private async void OnImportClick(object sender, RoutedEventArgs e) {
       // If not jumped from OnDrop
       if (sender != null) {
-        var ofd = new OpenFileDialog();
-        ofd.Multiselect = true;
-        ofd.CheckPathExists = true;
+        var ofd = new OpenFileDialog {
+          Multiselect = true,
+          CheckPathExists = true
+        };
         if (ofd.ShowDialog() != true) {
           return;
         }
@@ -198,10 +199,10 @@ namespace Rengex
       else if (button == BtnTranslate) {
         DropAction = DropAction == OnTranslateClick ? nul : OnTranslateClick;
       }
-      BtnImport.ClearValue(Control.BackgroundProperty);
-      BtnExport.ClearValue(Control.BackgroundProperty);
-      BtnOnestop.ClearValue(Control.BackgroundProperty);
-      BtnTranslate.ClearValue(Control.BackgroundProperty);
+      BtnImport.ClearValue(BackgroundProperty);
+      BtnExport.ClearValue(BackgroundProperty);
+      BtnOnestop.ClearValue(BackgroundProperty);
+      BtnTranslate.ClearValue(BackgroundProperty);
       if (DropAction != null) {
         button.Background = new SolidColorBrush(Colors.Azure);
       }
@@ -225,8 +226,9 @@ namespace Rengex
     private void AppendException(Exception e, string info = null) {
       WithAutoScroll(() => {
         TbLog.AppendText($"오류: {info ?? e.Message}");
-        var r = new Run($"\r\n{e}");
-        r.FontSize = 1;
+        var r = new Run($"\r\n{e}") {
+          FontSize = 1
+        };
         var lastPara = TbLog.Document.Blocks.LastBlock as Paragraph;
         lastPara.Inlines.Add(new Span(r));
         lastPara.Inlines.Add(new Run("\r\n"));
@@ -252,10 +254,11 @@ namespace Rengex
         LogText("파일이 사용 중이거나 읽기 전용인지 확인해보세요.");
       }
       catch (EzTransNotFoundException) {
-        var ofd = new OpenFileDialog();
-        ofd.CheckPathExists = true;
-        ofd.Multiselect = false;
-        ofd.Title = "Ehnd를 설치한 이지트랜스 폴더의 파일을 아무거나 찾아주세요";
+        var ofd = new OpenFileDialog {
+          CheckPathExists = true,
+          Multiselect = false,
+          Title = "Ehnd를 설치한 이지트랜스 폴더의 파일을 아무거나 찾아주세요"
+        };
         if (ofd.ShowDialog() != true) {
           TbLog.Document.Blocks.Remove(container);
           return;
