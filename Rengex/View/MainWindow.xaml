@@ -37,12 +37,12 @@
         <StaticResource ResourceKey="Import"/>
       </DockPanel>
     </Button>
-    <Button Name="BtnTranslate" Content="번역" Grid.Column="1" BorderThickness="1 1 1 0"
+    <Button Name="BtnTranslate" Content="번역" Grid.Column="1" BorderThickness="1 1 0 0"
             Click="OnTranslateClick" MouseRightButtonUp="OnRightClick" ToolTip="기존 번역을 무시하고 기계 번역을 수행합니다"/>
-    <Button Name="BtnOnestop" Content="원터치" Grid.Column="1" Grid.Row="1" BorderThickness="1 1 1 0"
+    <Button Name="BtnOnestop" Content="원터치" Grid.Column="1" Grid.Row="1" BorderThickness="1 1 0 0"
             Click="OnOnestopClick" MouseRightButtonUp="OnRightClick"
             ToolTip="나머지 세 개 버튼을 순서대로 실행합니다.&#x0a;다른 버튼을 우클릭해 드래그 시 기본 행동을 바꿀 수 있습니다."/>
-    <Button Name="BtnExport" Grid.Column="2" Grid.RowSpan="2" BorderThickness="0 1 0 0"
+    <Button Name="BtnExport" Grid.Column="2" Grid.RowSpan="2" BorderThickness="1 1 0 0"
             Click="OnExportClick" MouseRightButtonUp="OnRightClick" ToolTip="번역한 결과를 원래 파일에 합칩니다">
       <DockPanel>
         <TextBlock Text="번역 결과 내보내기" DockPanel.Dock="Bottom"/>
