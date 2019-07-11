@@ -33,8 +33,10 @@
     </Grid.ColumnDefinitions>
     <Button Name="BtnImport" Click="OnImportClick" Grid.RowSpan="2" MouseRightButtonUp="OnRightClick" BorderThickness="0 1 0 0" ToolTip="파일을 복사하고 내용을 추출합니다">
       <DockPanel>
-        <TextBlock Text="파일 가져오기 또는 드래그" DockPanel.Dock="Bottom"/>
-        <StaticResource ResourceKey="Import"/>
+        <TextBlock Text="파일 가져오기 또는 드래그" HorizontalAlignment="Center" DockPanel.Dock="Bottom"/>
+        <Border Padding="3">
+          <StaticResource ResourceKey="Import"/>
+        </Border>
       </DockPanel>
     </Button>
     <Button Name="BtnTranslate" Content="번역" Grid.Column="1" BorderThickness="1 1 0 0"
@@ -45,8 +47,10 @@
     <Button Name="BtnExport" Grid.Column="2" Grid.RowSpan="2" BorderThickness="1 1 0 0"
             Click="OnExportClick" MouseRightButtonUp="OnRightClick" ToolTip="번역한 결과를 원래 파일에 합칩니다">
       <DockPanel>
-        <TextBlock Text="번역 결과 내보내기" DockPanel.Dock="Bottom"/>
-        <StaticResource ResourceKey="Export"/>
+        <TextBlock Text="번역 결과 내보내기" HorizontalAlignment="Center" DockPanel.Dock="Bottom"/>
+        <Border Padding="3">
+          <StaticResource ResourceKey="Export"/>
+        </Border>
       </DockPanel>
     </Button>
     <RichTextBox Name="TbLog" Grid.Row="2" Grid.ColumnSpan="3" VerticalScrollBarVisibility="Auto" BorderThickness="0 1 0 0"
