@@ -1,8 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Rengex.Tests
-{
+namespace Rengex.Tests {
   [TestClass]
   public class EzTransXpTest {
     readonly EzTransXp trans = new EzTransXp();

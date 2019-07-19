@@ -1,55 +1,27 @@
-﻿using Microsoft.Win32;
-using System;
-using System.IO;
+﻿using System;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
 
-namespace Rengex
-{
+namespace Rengex.View {
   /// <summary>
   /// Interaction logic for MainWindow.xaml
   /// </summary>
   public partial class MainWindow : Window {
 
-    private Task Ongoing;
-    private RoutedEventHandler DropAction;
-    private Jp2KrTranslationVM Translator;
-    private RegexDotConfiguration DotConfig;
+    private readonly MainWindowVM vm;
 
     public MainWindow() {
+      vm = new MainWindowVM();
+      vm.LogAdded += LogAdded;
+      DataContext = vm;
       InitializeComponent();
-      OnRightClick(BtnOnestop, null);
+
       string build = Properties.Resources.BuildDate;
       string date = $"{build.Substring(2, 2)}{build.Substring(5, 2)}{build.Substring(8, 2)}";
-      LogText($"Rengex v{date} by nanikit\n");
-      try {
-        EnsureConfiguration();
-      }
-      catch (Exception e) {
-        AppendException(e);
-      }
-    }
-
-    private RegexDotConfiguration EnsureConfiguration() {
-      if (DotConfig != null) {
-        return DotConfig;
-      }
-      string cwd = CwdDesignator.ProjectDirectory;
-      DotConfig = new RegexDotConfiguration(cwd, ConfigReloaded, ConfigFaulted);
-      return DotConfig;
-    }
-
-    private DebugWindow DebugWindow =>
-      Application.Current.Windows.OfType<DebugWindow>().FirstOrDefault();
-
-    private void OnFlaskClick(object sender, RoutedEventArgs e) {
-      ShowRegexDebugWindow();
+      AppendText($"Rengex v{date} by nanikit\n");
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e) {
@@ -62,29 +34,20 @@ namespace Rengex
       }
     }
 
+    private DebugWindow DebugWindow =>
+      Application.Current.Windows.OfType<DebugWindow>().FirstOrDefault();
+
+    private void OnFlaskClick(object sender, RoutedEventArgs e) {
+      ShowRegexDebugWindow();
+    }
+
     private void ShowRegexDebugWindow() {
       Window dw = DebugWindow;
       if (dw == null) {
-        new DebugWindow(DotConfig).Show();
+        new DebugWindow(vm.dotConfig).Show();
       }
       else {
         dw.Activate();
-      }
-    }
-
-    private void ConfigReloaded(FileSystemEventArgs fse) {
-      if (fse != null) {
-        LogText($"설정 반영 성공: {fse.Name}\r\n");
-      }
-    }
-
-    private void ConfigFaulted(FileSystemEventArgs fse, Exception e) {
-      string msg = $"설정 반영 실패: {fse.Name}, {e.Message}\r\n";
-      if (e is ApplicationException) {
-        LogText(msg);
-      }
-      else {
-        AppendException(e, msg);
       }
     }
 
@@ -93,8 +56,7 @@ namespace Rengex
         return;
       }
       var paths = (string[])e.Data.GetData(DataFormats.FileDrop);
-      RenewTranslator(paths);
-      DropAction?.Invoke(null, e);
+      vm.RunDefaultOperation(paths);
     }
 
     private void CopyTextCommand(object sender, ExecutedRoutedEventArgs ea) {
@@ -138,76 +100,6 @@ namespace Rengex
       ea.Handled = true;
     }
 
-    /// <summary>
-    /// Get a new translator if new paths are designated. Otherwise
-    /// use a clone of previous translator for efficiency if possible.
-    /// </summary>
-    private Jp2KrTranslationVM RenewTranslator(string[] paths = null) {
-      if (paths == null && Translator != null) {
-        Translator = Translator.Clone();
-      }
-      else {
-        Translator = new Jp2KrTranslationVM(EnsureConfiguration(), paths);
-      }
-      return Translator;
-    }
-
-    private async void OnImportClick(object sender, RoutedEventArgs e) {
-      // If not jumped from OnDrop
-      if (sender != null) {
-        var ofd = new OpenFileDialog {
-          Multiselect = true,
-          CheckPathExists = true
-        };
-        if (ofd.ShowDialog() != true) {
-          return;
-        }
-        RenewTranslator(ofd.FileNames);
-      }
-      if (Translator == null) {
-        return;
-      }
-      await Operate(Translator.ImportTranslation);
-    }
-
-    private async void OnTranslateClick(object sender, RoutedEventArgs e) {
-      await Operate(RenewTranslator().MachineTranslation);
-    }
-
-    private async void OnExportClick(object sender, RoutedEventArgs e) {
-      await Operate(RenewTranslator().ExportTranslation);
-    }
-
-    private async void OnOnestopClick(object sender, RoutedEventArgs e) {
-      await Operate(RenewTranslator().OnestopTranslation);
-    }
-
-    private void OnRightClick(object sender, MouseButtonEventArgs e) {
-      if (!(sender is Button button)) {
-        return;
-      }
-      RoutedEventHandler nul = null;
-      if (button == BtnExport) {
-        DropAction = DropAction == OnExportClick ? nul : OnExportClick;
-      }
-      else if (button == BtnImport) {
-        DropAction = DropAction == OnImportClick ? nul : OnImportClick;
-      }
-      else if (button == BtnOnestop) {
-        DropAction = DropAction == OnOnestopClick ? nul : OnOnestopClick;
-      }
-      else if (button == BtnTranslate) {
-        DropAction = DropAction == OnTranslateClick ? nul : OnTranslateClick;
-      }
-      BtnImport.ClearValue(BackgroundProperty);
-      BtnExport.ClearValue(BackgroundProperty);
-      BtnOnestop.ClearValue(BackgroundProperty);
-      BtnTranslate.ClearValue(BackgroundProperty);
-      if (DropAction != null) {
-        button.Background = new SolidColorBrush(Colors.Azure);
-      }
-    }
-
     private void Post(Action action) => Dispatcher.BeginInvoke(action);
 
     private void WithAutoScroll(Action action) => Post(() => {
@@ -219,9 +111,29 @@ namespace Rengex
       }
     });
 
-    private void LogText(string res) => WithAutoScroll(() => {
+    private void LogAdded(object obj) {
+      switch (obj) {
+      case string s:
+        AppendText(s);
+        break;
+      case Exception e:
+        AppendException(e);
+        break;
+      case Jp2KrTranslationVM tvm:
+        AppendProgress(tvm);
+        break;
+      }
+    }
+
+    private void AppendText(string res) => WithAutoScroll(() => {
       TbLog.AppendText(res);
     });
+
+    private void AppendProgress(Jp2KrTranslationVM tvm) {
+      var control = new WorkProgress(tvm);
+      var container = new BlockUIContainer(control);
+      WithAutoScroll(() => TbLog.Document.Blocks.Add(container));
+    }
 
     private void AppendException(Exception e, string info = null) {
       WithAutoScroll(() => {
@@ -233,49 +145,6 @@ namespace Rengex
         lastPara.Inlines.Add(new Span(r));
         lastPara.Inlines.Add(new Run("\r\n"));
       });
-    }
-
-    private async Task Operate(Func<Task> task) {
-      if (!Ongoing?.IsCompleted ?? false) {
-        LogText("이미 작업 중입니다. 나중에 시도해주세요.\r\n");
-        return;
-      }
-
-      var control = new WorkProgress(Translator);
-      var container = new BlockUIContainer(control);
-      WithAutoScroll(() => TbLog.Document.Blocks.Add(container));
-
-      Ongoing = task();
-      try {
-        await Ongoing;
-        LogText("작업이 끝났습니다.\r\n");
-      }
-      catch (UnauthorizedAccessException) {
-        LogText("파일이 사용 중이거나 읽기 전용인지 확인해보세요.");
-      }
-      catch (EzTransNotFoundException) {
-        var ofd = new OpenFileDialog {
-          CheckPathExists = true,
-          Multiselect = false,
-          Title = "Ehnd를 설치한 이지트랜스 폴더의 파일을 아무거나 찾아주세요"
-        };
-        if (ofd.ShowDialog() != true) {
-          TbLog.Document.Blocks.Remove(container);
-          return;
-        }
-        Properties.Settings.Default.EzTransDir = Path.GetDirectoryName(ofd.FileName);
-        Properties.Settings.Default.Save();
-
-        TbLog.Document.Blocks.Remove(container);
-        Task retry = Operate(task);
-        await retry.ConfigureAwait(false);
-      }
-      catch (Exception e) {
-        if (Translator.Exceptions.Count == 0) {
-          Translator.Exceptions.Add(e);
-        }
-        LogText($"오류가 발생했습니다. 진행 표시줄을 복사하면 오류 내용이 복사됩니다.\r\n");
-      }
     }
 
     private void TbLogOnPreviewDragOver(object sender, DragEventArgs e) {

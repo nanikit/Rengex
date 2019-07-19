@@ -1,9 +1,9 @@
-﻿<Window x:Class="Rengex.MainWindow"
+﻿<Window x:Class="Rengex.View.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Rengex"
+        xmlns:local="clr-namespace:Rengex.View"
         mc:Ignorable="d" AllowDrop="True" Drop="OnDrop" UseLayoutRounding="True"
         Title="Rengex" Height="450" Width="480">
   <Window.Resources>
@@ -31,7 +31,12 @@
       <ColumnDefinition Width="3*"/>
       <ColumnDefinition Width="5*"/>
     </Grid.ColumnDefinitions>
-    <Button Name="BtnImport" Click="OnImportClick" Grid.RowSpan="2" MouseRightButtonUp="OnRightClick" BorderThickness="0 1 0 0" ToolTip="파일을 복사하고 내용을 추출합니다">
+    <Button Name="BtnImport" Grid.RowSpan="2" BorderThickness="0 1 0 0" ToolTip="파일을 복사하고 내용을 추출합니다"
+            Background="{Binding DefaultOperation, Mode=OneWay, Converter={local:AzureIfEqualConverter}, ConverterParameter={x:Static local:Operation.Import}}"
+            Command="{Binding OperateCommand}" CommandParameter="{x:Static local:Operation.Import}">
+      <Button.InputBindings>
+        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Import}"/>
+      </Button.InputBindings>
       <DockPanel>
         <TextBlock Text="파일 가져오기 또는 드래그" HorizontalAlignment="Center" DockPanel.Dock="Bottom"/>
         <Border Padding="3">
@@ -39,13 +44,28 @@
         </Border>
       </DockPanel>
     </Button>
-    <Button Name="BtnTranslate" Content="번역" Grid.Column="1" BorderThickness="1 1 0 0"
-            Click="OnTranslateClick" MouseRightButtonUp="OnRightClick" ToolTip="기존 번역을 무시하고 기계 번역을 수행합니다"/>
+    <Button Name="BtnTranslate" Content="번역" Grid.Column="1" BorderThickness="1 1 0 0" ToolTip="기존 번역을 무시하고 기계 번역을 수행합니다"
+            Background="{Binding DefaultOperation, Mode=OneWay, Converter={local:AzureIfEqualConverter}, ConverterParameter={x:Static local:Operation.Translate}}"
+            Command="{Binding OperateCommand}" CommandParameter="{x:Static local:Operation.Translate}">
+      <Button.InputBindings>
+        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Translate}"/>
+      </Button.InputBindings>
+    </Button>
     <Button Name="BtnOnestop" Content="원터치" Grid.Column="1" Grid.Row="1" BorderThickness="1 1 0 0"
-            Click="OnOnestopClick" MouseRightButtonUp="OnRightClick"
-            ToolTip="나머지 세 개 버튼을 순서대로 실행합니다.&#x0a;다른 버튼을 우클릭해 드래그 시 기본 행동을 바꿀 수 있습니다."/>
-    <Button Name="BtnExport" Grid.Column="2" Grid.RowSpan="2" BorderThickness="1 1 0 0"
-            Click="OnExportClick" MouseRightButtonUp="OnRightClick" ToolTip="번역한 결과를 원래 파일에 합칩니다">
+            ToolTip="나머지 세 개 버튼을 순서대로 실행합니다.&#x0a;다른 버튼을 우클릭해 드래그 시 기본 행동을 바꿀 수 있습니다."
+            Background="{Binding DefaultOperation, Mode=OneWay, Converter={local:AzureIfEqualConverter}, ConverterParameter={x:Static local:Operation.Onestop}}"
+            Command="{Binding OperateCommand}" CommandParameter="{x:Static local:Operation.Onestop}"
+            >
+      <Button.InputBindings>
+        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Onestop}"/>
+      </Button.InputBindings>
+    </Button>
+    <Button Name="BtnExport" Grid.Column="2" Grid.RowSpan="2" BorderThickness="1 1 0 0" ToolTip="번역한 결과를 원래 파일에 합칩니다"
+            Background="{Binding DefaultOperation, Mode=OneWay, Converter={local:AzureIfEqualConverter}, ConverterParameter={x:Static local:Operation.Export}}"
+            Command="{Binding OperateCommand}" CommandParameter="{x:Static local:Operation.Export}">
+      <Button.InputBindings>
+        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Export}"/>
+      </Button.InputBindings>
       <DockPanel>
         <TextBlock Text="번역 결과 내보내기" HorizontalAlignment="Center" DockPanel.Dock="Bottom"/>
         <Border Padding="3">

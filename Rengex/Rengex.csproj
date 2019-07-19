@@ -57,13 +57,17 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="View\DebugWindow.xaml.cs" />
+    <Compile Include="ViewModel\Jp2KrTranslationVM.cs" />
+    <Compile Include="View\DebugWindow.xaml.cs">
+      <DependentUpon>DebugWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\LabelProgress.xaml.cs">
       <DependentUpon>LabelProgress.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ViewModel\MainWindowVM.cs" />
     <Compile Include="View\WorkProgress.xaml.cs">
       <DependentUpon>WorkProgress.xaml</DependentUpon>
     </Compile>
@@ -87,7 +91,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="FlatDictionary.cs" />
+    <Compile Include="View\FlatDictionary.cs" />
     <Page Include="View\Asset\Export.xaml">
       <SubType>Designer</SubType>
       <Generator>XamlIntelliSenseFileGenerator</Generator>
@@ -105,8 +109,8 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\DebugWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+      <Generator>XamlIntelliSenseFileGenerator</Generator>
     </Page>
     <Page Include="View\LabelProgress.xaml">
       <SubType>Designer</SubType>

@@ -4,7 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Markup;
 
-namespace Rengex {
+namespace Rengex.View {
   /// <summary>
   /// A utility for importing separate xaml files while previewing it in xaml editor.
   /// </summary>
