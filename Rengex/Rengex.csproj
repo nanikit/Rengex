@@ -68,6 +68,9 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="ViewModel\MainWindowVM.cs" />
+    <Compile Include="View\NextMainWindow.xaml.cs">
+      <DependentUpon>NextMainWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\WorkProgress.xaml.cs">
       <DependentUpon>WorkProgress.xaml</DependentUpon>
     </Compile>
@@ -119,6 +122,10 @@
     <Page Include="View\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\NextMainWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\WorkProgress.xaml">
       <SubType>Designer</SubType>
