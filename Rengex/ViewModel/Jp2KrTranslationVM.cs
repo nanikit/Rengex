@@ -102,7 +102,7 @@ namespace Rengex {
         try {
           await Task.Run(() => item.Process());
         }
-        catch (EzTransNotFoundException e) {
+        catch (EztransNotFoundException e) {
           Progress.Foreground = LabelProgressVM.FgError;
           throw e;
         }

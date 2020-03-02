@@ -126,18 +126,21 @@ namespace Rengex {
   }
 
   sealed class SelfTranslator : IJp2KrTranslator {
-    private static EzTransXp Instance;
+    private static EztransXp Instance;
+    private static Task InitTask;
 
     public SelfTranslator(int msDelay = 200) {
-      if (Instance != null) {
+      if (Instance != null || InitTask != null) {
         return;
       }
       try {
-        string cfgEzt = Properties.Settings.Default.EzTransDir;
-        Instance = new EzTransXp(cfgEzt, msDelay);
+        string cfgEzt = Properties.Settings.Default.EztransDir;
+        InitTask = Task.Run(async () => {
+          Instance = await EztransXp.Create(cfgEzt, msDelay).ConfigureAwait(false);
+        });
       }
       catch (Exception e) {
-        Properties.Settings.Default.EzTransDir = null;
+        Properties.Settings.Default.EztransDir = null;
         throw e;
       }
     }
@@ -178,7 +181,7 @@ namespace Rengex {
         job.Client.TrySetResult(res);
       }
       catch (Exception e) {
-        if (e is EzTransNotFoundException) {
+        if (e is EztransNotFoundException) {
           Cancel.Cancel();
         }
         if (job.RetryCount < 3) {
@@ -308,25 +311,6 @@ namespace Rengex {
       void OnProgress(int current);
     }
 
-    private static IEnumerable<string> ChunkByLines(string source) {
-      int startIdx = 0;
-      int endIdx = 0;
-      while (true) {
-        if (endIdx >= source.Length) {
-          yield return source.Substring(startIdx, endIdx - startIdx);
-          break;
-        }
-        if (source[endIdx] == '\n') {
-          int len = endIdx - startIdx + 1;
-          if (len > 2000) {
-            yield return source.Substring(startIdx, len);
-            startIdx = endIdx + 1;
-          }
-        }
-        endIdx++;
-      }
-    }
-
     private readonly IJp2KrTranslator Backend;
     private readonly IJp2KrLogger Logger;
 
@@ -363,6 +347,25 @@ namespace Rengex {
     /// It does nothing.
     /// </summary>
     public void Dispose() {
+    }
+
+    private static IEnumerable<string> ChunkByLines(string source) {
+      int startIdx = 0;
+      int endIdx = 0;
+      while (true) {
+        if (endIdx >= source.Length) {
+          yield return source.Substring(startIdx, endIdx - startIdx);
+          break;
+        }
+        if (source[endIdx] == '\n') {
+          int len = endIdx - startIdx + 1;
+          if (len > 2000) {
+            yield return source.Substring(startIdx, len);
+            startIdx = endIdx + 1;
+          }
+        }
+        endIdx++;
+      }
     }
   }
 }

@@ -1,8 +1,10 @@
-﻿using Microsoft.Win32;
+﻿#nullable enable
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -19,91 +21,136 @@ namespace Rengex {
     /// </summary>
     /// <param name="source">Japanese string</param>
     /// <returns>Korean string</returns>
-    Task<string> Translate(string source);
+    Task<string?> Translate(string source);
   }
 
-  public class EzTransNotFoundException : ApplicationException {
-    public override string Message => "이지트랜스를 찾지 못했습니다.";
+  public class EztransException : Exception {
+    public EztransException(string message) : base(message) { }
+  }
+  public class EztransNotFoundException : EztransException {
+    public EztransNotFoundException(string message) : base($"이지트랜스를 찾지 못했습니다{message}") { }
   }
 
-  public class EzTransXp : IJp2KrTranslator {
+  public class EztransXp : IJp2KrTranslator {
+
+    public static async Task<EztransXp> Create(string? eztPath = null, int msDelay = 200) {
+      var exceptions = new Dictionary<string, Exception>();
+      foreach (string path in GetEztransDirs(eztPath)) {
+        if (!File.Exists(Path.Combine(path, "J2KEngine.dll"))) {
+          continue;
+        }
+        try {
+          IntPtr eztransDll = await LoadNativeDll(path, msDelay).ConfigureAwait(false);
+          return new EztransXp(eztransDll);
+        }
+        catch (Exception e) {
+          exceptions.Add(path, e);
+        }
+      }
+
+      string detail = string.Join("", exceptions.Select(x => $"\n  {x.Key}: {x.Value.Message}"));
+      throw new EztransNotFoundException(detail);
+    }
+
+    private static IEnumerable<string> GetEztransDirs(string? path) {
+      var paths = new List<string>();
+
+      if (path != null) {
+        paths.Add(path);
+      }
+
+      string? regPath = GetEztransDirFromReg();
+      if (regPath != null) {
+        paths.Add(regPath);
+      }
+
+      string defPath = @"C:\Program Files (x86)\ChangShinSoft\ezTrans XP";
+      paths.Add(defPath);
+      paths.AddRange(GetAssemblyParentDirectories());
+
+      return paths.Distinct();
+    }
+
+    public static string? GetEztransDirFromReg() {
+      RegistryKey key = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32);
+      return key.OpenSubKey(@"Software\ChangShin\ezTrans")?.GetValue(@"FilePath") as string;
+    }
+
+    private static IEnumerable<string> GetAssemblyParentDirectories() {
+      var assembly = System.Reflection.Assembly.GetEntryAssembly();
+      string child = assembly?.Location ?? Directory.GetCurrentDirectory();
+      while (true) {
+        string? parent = Path.GetDirectoryName(child);
+        if (parent == null) {
+          break;
+        }
+        yield return parent;
+        child = parent;
+      }
+    }
+
+    private static async Task<IntPtr> LoadNativeDll(string eztPath, int msDelay) {
+      IntPtr EztransDll = LoadLibrary(GetDllPath(eztPath));
+      if (EztransDll == IntPtr.Zero) {
+        int errorCode = Marshal.GetLastWin32Error();
+        throw new EztransException($"라이브러리 로드 실패(에러 코드: {errorCode})");
+      }
+
+      await Task.Delay(msDelay).ConfigureAwait(false);
+      string key = Path.Combine(eztPath, "Dat");
+      var initEx = GetFuncAddress<J2K_InitializeEx>(EztransDll, "J2K_InitializeEx");
+      if (!initEx("CSUSER123455", key)) {
+        throw new EztransException("엔진 초기화에 실패했습니다.");
+      }
+
+      return EztransDll;
+    }
 
     private static string GetDllPath(string eztPath) {
       return Path.Combine(eztPath, "J2KEngine.dll");
     }
 
-    public readonly Task InitDll;
-
-    private IntPtr EzTransDll;
-    private J2K_FreeMem J2kFree;
-    private J2K_TranslateMMNTW J2kMmntw;
-
-    public EzTransXp(string eztPath = null, int msDelay = 200) {
-      if (string.IsNullOrWhiteSpace(eztPath)) {
-        eztPath = GetEztransDirFromReg();
+    private static T GetFuncAddress<T>(IntPtr dll, string name) {
+      IntPtr addr = GetProcAddress(dll, name);
+      if (addr == IntPtr.Zero) {
+        throw new EztransException("Ehnd 파일이 아닙니다.");
       }
-      if (eztPath == null || !File.Exists(GetDllPath(eztPath))) {
-        throw new EzTransNotFoundException();
-      }
-      InitDll = LoadNativeDll(eztPath, msDelay);
+      return Marshal.GetDelegateForFunctionPointer<T>(addr);
+    }
+
+
+    private readonly J2K_FreeMem J2kFree;
+    private readonly J2K_TranslateMMNTW J2kMmntw;
+
+    private EztransXp(IntPtr eztransDll) {
+      J2kMmntw = GetFuncAddress<J2K_TranslateMMNTW>(eztransDll, "J2K_TranslateMMNTW");
+      J2kFree = GetFuncAddress<J2K_FreeMem>(eztransDll, "J2K_FreeMem");
+    }
+
+    public Task<string?> Translate(string jpStr) {
+      return Task.FromResult(TranslateInternal(jpStr));
     }
 
     public async Task<bool> IsHdorEnabled() {
-      string chk = await Translate("蜜ドル辞典").ConfigureAwait(false);
+      string? chk = await Translate("蜜ドル辞典").ConfigureAwait(false);
       return chk?.Contains("OK") ?? false;
     }
 
-    public static string GetEztransDirFromReg() {
-      RegistryKey key = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32);
-      return key.OpenSubKey(@"Software\ChangShin\ezTrans")?.GetValue(@"FilePath") as string;
+    public void Dispose() {
+      // 원래 FreeLibrary를 호출하려 했는데 그러면 Access violation이 뜬다.
     }
 
-    private async Task LoadNativeDll(string eztPath, int msDelay) {
-      EzTransDll = LoadLibrary(GetDllPath(eztPath));
-      if (EzTransDll == IntPtr.Zero) {
-        int errorCode = Marshal.GetLastWin32Error();
-        throw new Exception($"라이브러리 로드 실패(에러 코드: {errorCode})");
-      }
-      IntPtr addr = GetProcAddress(EzTransDll, "J2K_TranslateMMNTW");
-      if (addr == IntPtr.Zero) {
-        throw new Exception($"Ehnd 파일이 아닙니다.");
-      }
-      J2kMmntw = Marshal.GetDelegateForFunctionPointer<J2K_TranslateMMNTW>(addr);
-      addr = GetProcAddress(EzTransDll, "J2K_FreeMem");
-      J2kFree = Marshal.GetDelegateForFunctionPointer<J2K_FreeMem>(addr);
-      addr = GetProcAddress(EzTransDll, "J2K_InitializeEx");
-      var initEx = Marshal.GetDelegateForFunctionPointer<J2K_InitializeEx>(addr);
-      await Task.Delay(msDelay).ConfigureAwait(false);
-      string key = Path.Combine(eztPath, "Dat");
-      if (!initEx("CSUSER123455", key)) {
-        throw new Exception("엔진 초기화에 실패했습니다.");
-      }
-    }
-
-    private string TranslateInternal(string jpStr) {
-      var escaper = new EzTransEscaper();
-      string e = escaper.Escape(jpStr);
-      IntPtr p = J2kMmntw(0, e);
+    private string? TranslateInternal(string jpStr) {
+      var escaper = new EztransEscaper();
+      string escaped = escaper.Escape(jpStr);
+      IntPtr p = J2kMmntw(0, escaped);
       if (p == IntPtr.Zero) {
         return null;
       }
       string ret = Marshal.PtrToStringAuto(p);
       J2kFree(p);
-      string ue = ret == null ? null : escaper.Unescape(ret);
-      return ue;
-    }
-
-    public async Task<string> Translate(string jpStr) {
-      await InitDll.ConfigureAwait(false);
-      return TranslateInternal(jpStr);
-    }
-
-    public void Dispose() {
-      Dispose(true);
-    }
-
-    protected void Dispose(bool disposing) {
-      // 원래 FreeLibrary를 호출하려 했는데 그러면 Access violation이 뜬다.
+      string? unescaped = ret == null ? null : escaper.Unescape(ret);
+      return unescaped;
     }
 
     #region PInvoke
@@ -123,13 +170,13 @@ namespace Rengex {
 
 
   /// <summary>
-  /// EzTrans trims the string, so pre/post process are required to preserve spaces.
+  /// Eztrans trims the string, so pre/post process are required to preserve spaces.
   /// </summary>
   /// <remarks>
   /// It can't be a simple text to text function. It will affect translation result
   /// to replace spaces at the end of line with non spaces.
   /// </remarks>
-  internal class EzTransEscaper {
+  internal class EztransEscaper {
 
     enum EscapeKind {
       None,

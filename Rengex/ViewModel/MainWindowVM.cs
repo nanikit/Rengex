@@ -142,14 +142,14 @@ namespace Rengex.View {
           Log("작업이 끝났습니다.\r\n");
           return;
         }
-        catch (EzTransNotFoundException) {
+        catch (EztransNotFoundException) {
           string ezDir = AskEztransDir();
           if (ezDir == null) {
             return;
           }
 
           var props = Properties.Settings.Default;
-          props.EzTransDir = ezDir;
+          props.EztransDir = ezDir;
           props.Save();
 
           Task retry = Operate(tasker);

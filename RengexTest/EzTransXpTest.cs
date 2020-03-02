@@ -3,8 +3,12 @@ using System.Threading.Tasks;
 
 namespace Rengex.Tests {
   [TestClass]
-  public class EzTransXpTest {
-    readonly EzTransXp trans = new EzTransXp();
+  public class EztransXpTest {
+    readonly EztransXp trans;
+
+    public EztransXpTest() {
+      trans = EztransXp.Create().GetAwaiter().GetResult();
+    }
 
     private void TestPreservation(string str) {
       Task<string> t = trans.Translate(str);

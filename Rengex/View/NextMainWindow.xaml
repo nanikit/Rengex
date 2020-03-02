@@ -20,6 +20,15 @@
     </Grid.RowDefinitions>
 
     <ListView SelectedIndex="5" Grid.ColumnSpan="2">
+      <ListView.View>
+        <GridView>
+          <GridView.Columns>
+            <GridViewColumn Header="경로" />
+            <GridViewColumn Header="" />
+            <GridViewColumn Header="경로" />
+          </GridView.Columns>
+        </GridView>
+      </ListView.View>
       <ListViewItem>www\system\plugins.js</ListViewItem>
       <ListViewItem>www\data\Actors.json</ListViewItem>
       <ListViewItem>www\data\Animations.json</ListViewItem>
