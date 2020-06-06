@@ -145,8 +145,9 @@ namespace Rengex {
       }
     }
 
-    public Task<string> Translate(string source) {
-      return Task.Run(() => Instance.Translate(source));
+    public async Task<string> Translate(string source) {
+      await InitTask;
+      return await Instance.Translate(source);
     }
 
     public void Dispose() { }
@@ -182,7 +183,8 @@ namespace Rengex {
       }
       catch (Exception e) {
         if (e is EztransNotFoundException) {
-          Cancel.Cancel();
+          job.Client.TrySetException(e);
+          return;
         }
         if (job.RetryCount < 3) {
           job.RetryCount++;
@@ -340,7 +342,7 @@ namespace Rengex {
         progress?.OnProgress(translatedLength);
       }
 
-      return string.Join("", splitTasks.Select(x => x.Result));
+      return string.Join("", await Task.WhenAll(splitTasks));
     }
 
     /// <summary>
@@ -349,6 +351,7 @@ namespace Rengex {
     public void Dispose() {
     }
 
+    // TODO: improve readability
     private static IEnumerable<string> ChunkByLines(string source) {
       int startIdx = 0;
       int endIdx = 0;
