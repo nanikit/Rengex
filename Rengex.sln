@@ -1,11 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28016.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30615.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rengex", "Rengex\Rengex.csproj", "{E2F3A620-B6F6-4650-B316-AAADB558B9BD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RengexTest", "RengexTest\RengexTest.csproj", "{DE8AE329-820F-43B6-83E4-21538AD169CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rengex.Translator", "Rengex.Translator\Rengex.Translator.csproj", "{A5FA6B41-B03B-4A7B-895D-489D72B451F2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7B4EC2D8-513D-43F3-9141-180CC80BB68A}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +28,10 @@ Global
 		{DE8AE329-820F-43B6-83E4-21538AD169CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE8AE329-820F-43B6-83E4-21538AD169CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE8AE329-820F-43B6-83E4-21538AD169CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

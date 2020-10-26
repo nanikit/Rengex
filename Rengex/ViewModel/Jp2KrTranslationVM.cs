@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Rengex.Translator;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -41,6 +42,7 @@ namespace Rengex {
     private readonly RegexDotConfiguration dotConfig;
     private readonly List<TranslationUnit> translations;
     private string workKind;
+    private readonly SelfTranslator selfTranslator;
 
     /// <summary>
     /// if paths is null, search from metadata folder.
@@ -52,6 +54,7 @@ namespace Rengex {
       Progress = new LabelProgressVM();
       Faults = new ObservableCollection<ILabelProgressVM>();
       Ongoings = new ObservableCollection<ILabelProgressVM>();
+      selfTranslator = new SelfTranslator();
     }
 
     public Task ImportTranslation() {
@@ -61,7 +64,7 @@ namespace Rengex {
 
     public async Task MachineTranslation() {
       workKind = "번역: ";
-      using (var engine = new ForkTranslator(workerCount)) {
+      using (var engine = new ForkTranslator(workerCount, selfTranslator)) {
         Jp2KrWork genVm(TranslationUnit x) => new TranslateJp2Kr(x, engine);
         await ParallelForEach(genVm).ConfigureAwait(false);
       }
@@ -74,7 +77,7 @@ namespace Rengex {
 
     public async Task OnestopTranslation() {
       workKind = "원터치: ";
-      using (var engine = new ForkTranslator(workerCount)) {
+      using (var engine = new ForkTranslator(workerCount, selfTranslator)) {
         Jp2KrWork genVm(TranslationUnit x) => new OnestopJp2Kr(x, engine);
         await ParallelForEach(genVm).ConfigureAwait(false);
       }

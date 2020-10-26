@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Rengex.Translator;
 using System.Threading.Tasks;
 
 namespace Rengex.Tests {

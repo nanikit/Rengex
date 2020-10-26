@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Rengex.Translator;
+using System;
 using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Windows;
@@ -21,7 +22,8 @@ namespace Rengex {
           if (!int.TryParse(args[0], out delay)) {
             delay = 200;
           }
-          new ChildForkTranslator(delay).Serve().Wait();
+          var basis = new SelfTranslator(delay);
+          new ChildForkTranslator(basis).Serve().Wait();
         }
       }
       catch (Exception e) {

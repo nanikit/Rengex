@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using Rengex.Translator;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -66,18 +67,18 @@ namespace Rengex.View {
 
     private void RunOperation(Operation kind) {
       switch (kind) {
-      case Operation.Import:
-        Import();
-        break;
-      case Operation.Translate:
-        Translate();
-        break;
-      case Operation.Export:
-        Export();
-        break;
-      case Operation.Onestop:
-        Onestop();
-        break;
+        case Operation.Import:
+          Import();
+          break;
+        case Operation.Translate:
+          Translate();
+          break;
+        case Operation.Export:
+          Export();
+          break;
+        case Operation.Onestop:
+          Onestop();
+          break;
       }
     }
 

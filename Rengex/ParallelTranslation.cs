@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Rengex.Translator;
+using System;
 using System.Threading.Tasks;
 using System.Windows.Media;
-using static Rengex.SplitTranslater;
+using static Rengex.Translator.SplitTranslater;
 
 namespace Rengex {
 
@@ -50,20 +51,20 @@ namespace Rengex {
 
     private static string PhaseToString(TranslationPhase phase) {
       switch (phase) {
-      case TranslationPhase.Complete:
-        return "완료";
-      case TranslationPhase.Error:
-        return "에러 - ";
-      case TranslationPhase.Export:
-        return "병합 중…";
-      case TranslationPhase.Import:
-        return "추출 중…";
-      case TranslationPhase.Translation:
-        return "번역 중…";
-      case TranslationPhase.Init:
-        return "대기 중…";
-      default:
-        return "";
+        case TranslationPhase.Complete:
+          return "완료";
+        case TranslationPhase.Error:
+          return "에러 - ";
+        case TranslationPhase.Export:
+          return "병합 중…";
+        case TranslationPhase.Import:
+          return "추출 중…";
+        case TranslationPhase.Translation:
+          return "번역 중…";
+        case TranslationPhase.Init:
+          return "대기 중…";
+        default:
+          return "";
       }
     }
 

@@ -4,7 +4,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Rengex {
+namespace Rengex.Translator {
 
   public static class SerialUtility {
     public static BinaryFormatter Formatter = new BinaryFormatter();

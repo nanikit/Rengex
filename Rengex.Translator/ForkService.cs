@@ -6,16 +6,15 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Rengex {
+namespace Rengex.Translator {
 
   public class ChildForkTranslator {
-    readonly int MsDelay;
-    IJp2KrTranslator Translator;
+    readonly IJp2KrTranslator Translator;
     readonly NamedPipeClientStream PipeClient;
 
-    public ChildForkTranslator(int msDelay, string pipeName = ParentForkTranslator.DefaultPipeName) {
-      MsDelay = msDelay;
+    public ChildForkTranslator(IJp2KrTranslator basis, string pipeName = ParentForkTranslator.DefaultPipeName) {
       PipeClient = new NamedPipeClientStream(".", pipeName);
+      Translator = basis;
     }
 
     public async Task Serve() {
@@ -23,9 +22,6 @@ namespace Rengex {
       try {
         if (!PipeClient.IsConnected) {
           return;
-        }
-        if (Translator == null) {
-          Translator = new SelfTranslator(MsDelay);
         }
         while (true) {
           object src = await PipeClient.ReadObjAsync<object>().ConfigureAwait(false);
@@ -125,45 +121,17 @@ namespace Rengex {
     }
   }
 
-  sealed class SelfTranslator : IJp2KrTranslator {
-    private static EztransXp Instance;
-    private static Task InitTask;
-
-    public SelfTranslator(int msDelay = 200) {
-      if (Instance != null || InitTask != null) {
-        return;
-      }
-      try {
-        string cfgEzt = Properties.Settings.Default.EztransDir;
-        InitTask = Task.Run(async () => {
-          Instance = await EztransXp.Create(cfgEzt, msDelay).ConfigureAwait(false);
-        });
-      }
-      catch (Exception e) {
-        Properties.Settings.Default.EztransDir = null;
-        throw e;
-      }
-    }
-
-    public async Task<string> Translate(string source) {
-      await InitTask;
-      return await Instance.Translate(source);
-    }
-
-    public void Dispose() { }
-  }
-
-  class ForkTranslator : IJp2KrTranslator {
+  public class ForkTranslator : IJp2KrTranslator {
     readonly int PoolSize;
     readonly Task ManagerTask;
     readonly List<Task> Workers = new List<Task>();
     readonly List<IJp2KrTranslator> Translators = new List<IJp2KrTranslator>();
-    readonly MyBufferBlock<Job> Jobs = new MyBufferBlock<Job>();
+    readonly SimpleBufferBlock<Job> Jobs = new SimpleBufferBlock<Job>();
     CancellationTokenSource Cancel = new CancellationTokenSource();
 
-    public ForkTranslator(int poolSize) {
+    public ForkTranslator(int poolSize, IJp2KrTranslator basis) {
       PoolSize = Math.Max(1, poolSize);
-      Translators.Add(new SelfTranslator());
+      Translators.Add(basis);
       ManagerTask = Task.Run(() => Manager());
     }
 

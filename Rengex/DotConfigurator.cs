@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Rengex.Translator;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -32,8 +33,8 @@ namespace Rengex {
 
     public event FileSystemEventHandler Commited = delegate { };
 
-    private readonly MyBufferBlock<FileSystemEventArgs> ChangeQueue
-      = new MyBufferBlock<FileSystemEventArgs>();
+    private readonly SimpleBufferBlock<FileSystemEventArgs> ChangeQueue
+      = new SimpleBufferBlock<FileSystemEventArgs>();
     private readonly CancellationTokenSource Cancel = new CancellationTokenSource();
     private readonly Task TimeoutFilter;
     private readonly int MsTimeout;
@@ -225,27 +226,27 @@ namespace Rengex {
 
     private void ReflectDelta(FileSystemEventArgs fse) {
       switch (fse.ChangeType) {
-      case WatcherChangeTypes.Changed:
-        if (RegionDict.TryGetValue(fse.FullPath.ToLower(), out Region region)) {
-          region.Value = ConfigBuilder.CreateFromFile(fse.FullPath);
-        }
-        else {
+        case WatcherChangeTypes.Changed:
+          if (RegionDict.TryGetValue(fse.FullPath.ToLower(), out Region region)) {
+            region.Value = ConfigBuilder.CreateFromFile(fse.FullPath);
+          }
+          else {
+            AddRegion(fse.FullPath);
+          }
+          break;
+        case WatcherChangeTypes.Deleted:
+          RemoveRegion(fse.FullPath);
+          break;
+        case WatcherChangeTypes.Created:
           AddRegion(fse.FullPath);
-        }
-        break;
-      case WatcherChangeTypes.Deleted:
-        RemoveRegion(fse.FullPath);
-        break;
-      case WatcherChangeTypes.Created:
-        AddRegion(fse.FullPath);
-        break;
-      case WatcherChangeTypes.Renamed:
-        var ren = fse as RenamedEventArgs;
-        RemoveRegion(ren.OldFullPath);
-        if (ren.FullPath.EndsWith(ConfigBuilder.GetExtension())) {
-          AddRegion(ren.FullPath);
-        }
-        break;
+          break;
+        case WatcherChangeTypes.Renamed:
+          var ren = fse as RenamedEventArgs;
+          RemoveRegion(ren.OldFullPath);
+          if (ren.FullPath.EndsWith(ConfigBuilder.GetExtension())) {
+            AddRegion(ren.FullPath);
+          }
+          break;
       }
     }
 
