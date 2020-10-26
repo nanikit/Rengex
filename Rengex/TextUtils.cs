@@ -173,7 +173,6 @@ namespace Rengex {
   }
 
   class StringWithCodePage {
-
     public static bool ReadAllTextAutoDetect(string path, out StringWithCodePage guessed) {
       string[] encodingNames = new string[] {
         "utf-8",

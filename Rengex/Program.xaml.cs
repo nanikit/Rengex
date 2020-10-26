@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Runtime.ExceptionServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -9,7 +10,7 @@ namespace Rengex {
   /// <summary>
   /// Interaction logic for App.xaml
   /// </summary>
-  public partial class App : Application {
+  public partial class Program : Application {
     [STAThread]
     [HandleProcessCorruptedStateExceptions]
     public static void Main(string[] args) {
@@ -32,10 +33,10 @@ namespace Rengex {
     }
 
     private static void LaunchWPF() {
-      var application = new App();
+      var application = new Program();
       application.InitializeComponent();
-      application.ShutdownMode = ShutdownMode.OnMainWindowClose;
       application.DispatcherUnhandledException += OnUnhandledException;
+      Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
       application.Run();
     }
 

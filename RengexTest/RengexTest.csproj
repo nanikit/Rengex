@@ -60,10 +60,6 @@
       <Project>{a5fa6b41-b03b-4a7b-895d-489d72b451f2}</Project>
       <Name>Rengex.Translator</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Rengex\Rengex.csproj">
-      <Project>{e2f3a620-b6f6-4650-b316-aaadb558b9bd}</Project>
-      <Name>Rengex</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

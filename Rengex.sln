@@ -3,35 +3,49 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30615.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rengex", "Rengex\Rengex.csproj", "{E2F3A620-B6F6-4650-B316-AAADB558B9BD}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RengexTest", "RengexTest\RengexTest.csproj", "{DE8AE329-820F-43B6-83E4-21538AD169CA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rengex.Translator", "Rengex.Translator\Rengex.Translator.csproj", "{A5FA6B41-B03B-4A7B-895D-489D72B451F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rengex.Translator", "Rengex.Translator\Rengex.Translator.csproj", "{A5FA6B41-B03B-4A7B-895D-489D72B451F2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7B4EC2D8-513D-43F3-9141-180CC80BB68A}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rengex", "Rengex\Rengex.csproj", "{D3D3BDE8-70EC-425F-BD07-E65D855EFC75}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{E2F3A620-B6F6-4650-B316-AAADB558B9BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E2F3A620-B6F6-4650-B316-AAADB558B9BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E2F3A620-B6F6-4650-B316-AAADB558B9BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E2F3A620-B6F6-4650-B316-AAADB558B9BD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DE8AE329-820F-43B6-83E4-21538AD169CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DE8AE329-820F-43B6-83E4-21538AD169CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE8AE329-820F-43B6-83E4-21538AD169CA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DE8AE329-820F-43B6-83E4-21538AD169CA}.Debug|x86.Build.0 = Debug|Any CPU
 		{DE8AE329-820F-43B6-83E4-21538AD169CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE8AE329-820F-43B6-83E4-21538AD169CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE8AE329-820F-43B6-83E4-21538AD169CA}.Release|x86.ActiveCfg = Release|Any CPU
+		{DE8AE329-820F-43B6-83E4-21538AD169CA}.Release|x86.Build.0 = Release|Any CPU
 		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Debug|x86.Build.0 = Debug|Any CPU
 		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Release|x86.ActiveCfg = Release|Any CPU
+		{A5FA6B41-B03B-4A7B-895D-489D72B451F2}.Release|x86.Build.0 = Release|Any CPU
+		{D3D3BDE8-70EC-425F-BD07-E65D855EFC75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3D3BDE8-70EC-425F-BD07-E65D855EFC75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3D3BDE8-70EC-425F-BD07-E65D855EFC75}.Debug|x86.ActiveCfg = Debug|x86
+		{D3D3BDE8-70EC-425F-BD07-E65D855EFC75}.Debug|x86.Build.0 = Debug|x86
+		{D3D3BDE8-70EC-425F-BD07-E65D855EFC75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3D3BDE8-70EC-425F-BD07-E65D855EFC75}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3D3BDE8-70EC-425F-BD07-E65D855EFC75}.Release|x86.ActiveCfg = Release|x86
+		{D3D3BDE8-70EC-425F-BD07-E65D855EFC75}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

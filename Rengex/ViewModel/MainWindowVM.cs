@@ -150,7 +150,7 @@ namespace Rengex.View {
           }
 
           var props = Properties.Settings.Default;
-          props.EztransDir = ezDir;
+          props.EzTransDir = ezDir;
           props.Save();
 
           Task retry = Operate(tasker);

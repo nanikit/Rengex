@@ -11,13 +11,13 @@ namespace Rengex.Translator {
         return;
       }
       try {
-        string cfgEzt = Properties.Settings.Default.EztransDir;
+        string cfgEzt = Properties.Settings.Default.EzTransDir;
         InitTask = Task.Run(async () => {
           Instance = await EztransXp.Create(cfgEzt, msDelay).ConfigureAwait(false);
         });
       }
       catch (Exception e) {
-        Properties.Settings.Default.EztransDir = null;
+        Properties.Settings.Default.EzTransDir = null;
         throw e;
       }
     }

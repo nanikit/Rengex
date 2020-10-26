@@ -3,6 +3,10 @@
 namespace Rengex.Translator {
   public class EncodingTester {
 
+    static EncodingTester() {
+      Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+    }
+
     private readonly Encoder Encode;
     private readonly char[] Chars = new char[1];
     private readonly byte[] Bytes = new byte[8];

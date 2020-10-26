@@ -1,8 +1,8 @@
-﻿<Application x:Class="Rengex.App"
+﻿<Application x:Class="Rengex.Program"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Rengex"
-             StartupUri="View/MainWindow.xaml">
+             StartupUri="View/MainWindow.xaml"
+             ShutdownMode="OnMainWindowClose">
   <Application.Resources>
     <Style x:Key="OpaqueHoverButton" TargetType="Button">
       <Style.Triggers>
