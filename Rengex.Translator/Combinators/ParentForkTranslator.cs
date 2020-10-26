@@ -4,7 +4,7 @@ using System.IO.Pipes;
 using System.Threading.Tasks;
 
 namespace Rengex.Translator {
-  public class ParentForkTranslator : IJp2KrTranslator {
+  public class ParentForkTranslator : ITranslator {
     public const string DefaultPipeName = "rengex_subtrans";
 
     /// <summary>

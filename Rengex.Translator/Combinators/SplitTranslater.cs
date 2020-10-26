@@ -9,17 +9,17 @@ namespace Rengex.Translator {
   /// <remarks>
   /// It's Dispose() doesn't dispose base translator.
   /// </remarks>
-  public class SplitTranslater : IJp2KrTranslator {
+  public class SplitTranslater : ITranslator {
 
     public interface IJp2KrLogger {
       void OnStart(int total);
       void OnProgress(int current);
     }
 
-    private readonly IJp2KrTranslator Backend;
+    private readonly ITranslator Backend;
     private readonly IJp2KrLogger Logger;
 
-    public SplitTranslater(IJp2KrTranslator translator, IJp2KrLogger progress) {
+    public SplitTranslater(ITranslator translator, IJp2KrLogger progress) {
       Backend = translator;
       Logger = progress;
     }

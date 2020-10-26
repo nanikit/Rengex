@@ -127,10 +127,10 @@ namespace Rengex {
   }
 
   class TranslateJp2Kr : Jp2KrWork, IJp2KrLogger {
-    private readonly IJp2KrTranslator translator;
+    private readonly ITranslator translator;
     private int translationSize;
 
-    public TranslateJp2Kr(TranslationUnit tu, IJp2KrTranslator engine) : base(tu) {
+    public TranslateJp2Kr(TranslationUnit tu, ITranslator engine) : base(tu) {
       translator = engine;
     }
 
@@ -158,10 +158,10 @@ namespace Rengex {
   }
 
   class OnestopJp2Kr : Jp2KrWork, IJp2KrLogger {
-    private readonly IJp2KrTranslator translator;
+    private readonly ITranslator translator;
     private int translationSize;
 
-    public OnestopJp2Kr(TranslationUnit tu, IJp2KrTranslator engine) : base(tu) {
+    public OnestopJp2Kr(TranslationUnit tu, ITranslator engine) : base(tu) {
       translator = engine;
     }
 

@@ -14,7 +14,7 @@ namespace Rengex.Translator {
   /// <summary>
   /// It can translate japanese to korean.
   /// </summary>
-  public interface IJp2KrTranslator : IDisposable {
+  public interface ITranslator : IDisposable {
     /// <summary>
     /// Translate japanese string to korean.
     /// </summary>
@@ -30,7 +30,7 @@ namespace Rengex.Translator {
     public EztransNotFoundException(string message) : base($"이지트랜스를 찾지 못했습니다{message}") { }
   }
 
-  public class EztransXp : IJp2KrTranslator {
+  public class EztransXp : ITranslator {
 
     public static async Task<EztransXp> Create(string? eztPath = null, int msDelay = 200) {
       var exceptions = new Dictionary<string, Exception>();

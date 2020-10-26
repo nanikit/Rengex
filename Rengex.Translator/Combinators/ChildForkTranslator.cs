@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 
 namespace Rengex.Translator {
   public class ChildForkTranslator {
-    readonly IJp2KrTranslator Translator;
+    readonly ITranslator Translator;
     readonly NamedPipeClientStream PipeClient;
 
-    public ChildForkTranslator(IJp2KrTranslator basis, string pipeName = ParentForkTranslator.DefaultPipeName) {
+    public ChildForkTranslator(ITranslator basis, string pipeName = ParentForkTranslator.DefaultPipeName) {
       PipeClient = new NamedPipeClientStream(".", pipeName);
       Translator = basis;
     }

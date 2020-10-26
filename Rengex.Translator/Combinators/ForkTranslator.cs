@@ -4,15 +4,15 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Rengex.Translator {
-  public class ForkTranslator : IJp2KrTranslator {
+  public class ForkTranslator : ITranslator {
     readonly int PoolSize;
     readonly Task ManagerTask;
     readonly List<Task> Workers = new List<Task>();
-    readonly List<IJp2KrTranslator> Translators = new List<IJp2KrTranslator>();
+    readonly List<ITranslator> Translators = new List<ITranslator>();
     readonly SimpleBufferBlock<Job> Jobs = new SimpleBufferBlock<Job>();
     CancellationTokenSource Cancel = new CancellationTokenSource();
 
-    public ForkTranslator(int poolSize, IJp2KrTranslator basis) {
+    public ForkTranslator(int poolSize, ITranslator basis) {
       PoolSize = Math.Max(1, poolSize);
       Translators.Add(basis);
       ManagerTask = Task.Run(() => Manager());
@@ -27,7 +27,7 @@ namespace Rengex.Translator {
     /// <summary>
     /// Monitor translation completion at most 3 trials.
     /// </summary>
-    private async Task Worker(IJp2KrTranslator translator, Job job) {
+    private async Task Worker(ITranslator translator, Job job) {
       try {
         string res = await translator.Translate(job.Source).ConfigureAwait(false);
         job.Client.TrySetResult(res);
@@ -57,7 +57,7 @@ namespace Rengex.Translator {
         }
         await Schedule(job).ConfigureAwait(false);
       }
-      foreach (IJp2KrTranslator translator in Translators) {
+      foreach (ITranslator translator in Translators) {
         translator.Dispose();
       }
     }

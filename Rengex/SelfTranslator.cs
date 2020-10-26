@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 
 namespace Rengex.Translator {
-  sealed class SelfTranslator : IJp2KrTranslator {
+  sealed class SelfTranslator : ITranslator {
     private static EztransXp Instance;
     private static Task InitTask;
 

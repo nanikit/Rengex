@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Rengex {
   interface IJpToKrable {
     void ExtractSourceText();
-    Task MachineTranslate(IJp2KrTranslator translator);
+    Task MachineTranslate(ITranslator translator);
     void BuildTranslation();
   }
 
@@ -35,7 +35,7 @@ namespace Rengex {
       WriteIntermediates(Config.Matches(txt));
     }
 
-    public async Task MachineTranslate(IJp2KrTranslator translator) {
+    public async Task MachineTranslate(ITranslator translator) {
       if (!File.Exists(Workspace.TranslationPath)) {
         ExtractSourceText();
       }
