@@ -23,8 +23,8 @@ namespace Rengex.Translator {
     }
 
     public async Task<string> Translate(string source) {
-      await InitTask;
-      return await Instance.Translate(source);
+      await InitTask.ConfigureAwait(false);
+      return await Task.Run(() => Instance.Translate(source)).ConfigureAwait(false);
     }
 
     public void Dispose() { }
