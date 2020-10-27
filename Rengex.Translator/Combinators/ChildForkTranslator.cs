@@ -1,4 +1,6 @@
-﻿using System.IO.Pipes;
+﻿#nullable enable
+using System;
+using System.IO.Pipes;
 using System.Threading.Tasks;
 
 namespace Rengex.Translator {
@@ -12,19 +14,22 @@ namespace Rengex.Translator {
     }
 
     public async Task Serve() {
-      await PipeClient.ConnectAsync(5000).ConfigureAwait(false);
+      await PipeClient.ConnectAsync(1000).ConfigureAwait(false);
       try {
         if (!PipeClient.IsConnected) {
           return;
         }
         while (true) {
-          object src = await PipeClient.ReadObjAsync<object>().ConfigureAwait(false);
-          if (src is bool) {
+          object message = await PipeClient.ReadObjAsync<object>().ConfigureAwait(false);
+          if (!(message is string start)) {
             break;
           }
-          string done = await Translator.Translate(src as string).ConfigureAwait(false);
+          string done = await Translator.Translate(start).ConfigureAwait(false);
           await PipeClient.WriteObjAsync(done).ConfigureAwait(false);
         }
+      }
+      catch (Exception error) {
+        System.Diagnostics.Debug.WriteLine(error);
       }
       finally {
         PipeClient.Dispose();
