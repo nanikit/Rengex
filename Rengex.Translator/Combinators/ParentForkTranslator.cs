@@ -11,12 +11,13 @@ namespace Rengex.Translator {
     /// Ehnd에서 크래시가 나는 경우가 있는데 견고한 방법을 찾지 못함.
     /// </summary>
     int MsInitDelay = 200;
-    Process Child;
+    Process? Child;
     readonly string PipeName;
     NamedPipeServerStream PipeServer;
 
     public ParentForkTranslator(string pipeName = DefaultPipeName) {
       PipeName = pipeName;
+      PipeServer = new NamedPipeServerStream(PipeName, PipeDirection.InOut, Environment.ProcessorCount + 2);
     }
 
     public async Task<string> Translate(string source) {
@@ -31,23 +32,19 @@ namespace Rengex.Translator {
     }
 
     private async Task SendTranslationWork(string script) {
-      if (!PipeServer?.IsConnected ?? true) {
+      if (!PipeServer.IsConnected) {
         await InitializeChild().ConfigureAwait(false);
       }
       await PipeServer.WriteObjAsync(script).ConfigureAwait(false);
     }
 
     private async Task InitializeChild() {
-      string path = Process.GetCurrentProcess().MainModule.FileName;
-      Dispose();
-      PipeServer = new NamedPipeServerStream(PipeName, PipeDirection.InOut, Environment.ProcessorCount + 2);
-      Child = Process.Start(path, MsInitDelay.ToString());
+      DisposeChild();
       Task connection = PipeServer.WaitForConnectionAsync();
-      Task fin = await Task.WhenAny(connection, Task.Delay(5000)).ConfigureAwait(false);
-      if (fin != connection) {
-        if (!Child.HasExited) {
-          Child.Kill();
-        }
+      string path = Process.GetCurrentProcess().MainModule.FileName;
+      Child = Process.Start(path, MsInitDelay.ToString());
+      Task finished = await Task.WhenAny(connection, Task.Delay(2000)).ConfigureAwait(false);
+      if (finished != connection) {
         throw new ApplicationException("서브 프로세스가 응답하지 않습니다.");
       }
     }
@@ -73,7 +70,6 @@ namespace Rengex.Translator {
           PipeServer.WriteObjAsync(false).Wait(5000);
         }
         PipeServer.Dispose();
-        PipeServer = null;
       }
     }
 

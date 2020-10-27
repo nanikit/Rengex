@@ -41,7 +41,8 @@ namespace Rengex.Translator {
         Logger?.OnProgress(translatedLength);
       }
 
-      return string.Join("", await Task.WhenAll(splitTasks));
+      string[] results = await Task.WhenAll(splitTasks).ConfigureAwait(false);
+      return string.Join("", results);
     }
 
     /// <summary>
