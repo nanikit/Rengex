@@ -16,15 +16,15 @@ namespace Rengex.Translator {
           Instance = await EztransXp.Create(cfgEzt, msDelay).ConfigureAwait(false);
         });
       }
-      catch (Exception e) {
+      catch (Exception error) {
         Properties.Settings.Default.EzTransDir = null;
-        throw e;
+        throw error;
       }
     }
 
     public async Task<string> Translate(string source) {
       await InitTask.ConfigureAwait(false);
-      return await Task.Run(() => Instance.Translate(source)).ConfigureAwait(false);
+      return await Instance.Translate(source).ConfigureAwait(false);
     }
 
     public void Dispose() { }

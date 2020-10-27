@@ -9,7 +9,7 @@ namespace Rengex.Translator {
   /// <remarks>
   /// It's Dispose() doesn't dispose base translator.
   /// </remarks>
-  public class SplitTranslater : ITranslator {
+  public class SplitTranslator : ITranslator {
 
     public interface IJp2KrLogger {
       void OnStart(int total);
@@ -17,19 +17,15 @@ namespace Rengex.Translator {
     }
 
     private readonly ITranslator Backend;
-    private readonly IJp2KrLogger Logger;
+    private readonly IJp2KrLogger? Logger;
 
-    public SplitTranslater(ITranslator translator, IJp2KrLogger progress) {
+    public SplitTranslator(ITranslator translator, IJp2KrLogger? progress = null) {
       Backend = translator;
       Logger = progress;
     }
 
-    public Task<string> Translate(string source) {
-      return Translate(source, Logger);
-    }
-
-    public async Task<string> Translate(string source, IJp2KrLogger progress) {
-      progress?.OnStart(source.Length);
+    public async Task<string> Translate(string source) {
+      Logger?.OnStart(source.Length);
 
       List<string> splits = ChunkByLines(source).ToList();
       List<Task<string>> splitTasks = splits.Select(Backend.Translate).ToList();
@@ -42,7 +38,7 @@ namespace Rengex.Translator {
 
         int doneIdx = splitTasks.IndexOf(done);
         translatedLength += splits[doneIdx].Length;
-        progress?.OnProgress(translatedLength);
+        Logger?.OnProgress(translatedLength);
       }
 
       return string.Join("", await Task.WhenAll(splitTasks));

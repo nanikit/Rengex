@@ -20,7 +20,7 @@ namespace Rengex.Translator {
     /// </summary>
     /// <param name="source">Japanese string</param>
     /// <returns>Korean string</returns>
-    Task<string?> Translate(string source);
+    Task<string> Translate(string source);
   }
 
   public class EztransException : Exception {
@@ -126,8 +126,8 @@ namespace Rengex.Translator {
       J2kFree = GetFuncAddress<J2K_FreeMem>(eztransDll, "J2K_FreeMem");
     }
 
-    public Task<string?> Translate(string jpStr) {
-      return Task.FromResult(TranslateInternal(jpStr));
+    public Task<string> Translate(string jpStr) {
+      return Task.Run(() => TranslateInternal(jpStr));
     }
 
     public async Task<bool> IsHdorEnabled() {
@@ -139,17 +139,16 @@ namespace Rengex.Translator {
       // 원래 FreeLibrary를 호출하려 했는데 그러면 Access violation이 뜬다.
     }
 
-    private string? TranslateInternal(string jpStr) {
+    private string TranslateInternal(string jpStr) {
       var escaper = new EztransEscaper();
       string escaped = escaper.Escape(jpStr);
       IntPtr p = J2kMmntw(0, escaped);
       if (p == IntPtr.Zero) {
-        return null;
+        throw new EztransException("이지트랜스에서 알 수 없는 오류가 발생했습니다");
       }
       string ret = Marshal.PtrToStringAuto(p);
       J2kFree(p);
-      string? unescaped = ret == null ? null : escaper.Unescape(ret);
-      return unescaped;
+      return escaper.Unescape(ret);
     }
 
     #region PInvoke

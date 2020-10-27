@@ -2,7 +2,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows.Media;
-using static Rengex.Translator.SplitTranslater;
+using static Rengex.Translator.SplitTranslator;
 
 namespace Rengex {
 
@@ -137,7 +137,7 @@ namespace Rengex {
     public async override Task Process() {
       Phase = TranslationPhase.Translation;
 
-      using (var splitter = new SplitTranslater(translator, this)) {
+      using (var splitter = new SplitTranslator(translator, this)) {
         await translation.MachineTranslate(splitter).ConfigureAwait(false);
       }
 
@@ -170,7 +170,7 @@ namespace Rengex {
       translation.ExtractSourceText();
 
       SetProgress(TranslationPhase.Translation, 10);
-      using (var splitter = new SplitTranslater(translator, this)) {
+      using (var splitter = new SplitTranslator(translator, this)) {
         await translation.MachineTranslate(splitter).ConfigureAwait(false);
       }
 
