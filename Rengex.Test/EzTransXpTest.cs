@@ -1,9 +1,8 @@
-ï»¿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Rengex.Translator;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Rengex.Tests {
-  [TestClass]
   public class EztransXpTest {
     readonly EztransXp trans;
 
@@ -14,36 +13,36 @@ namespace Rengex.Tests {
     private void TestPreservation(string str) {
       Task<string> t = trans.Translate(str);
       t.Wait();
-      Assert.AreEqual(str, t.Result);
+      Assert.Equal(str, t.Result);
     }
 
-    [TestMethod]
+    [Fact]
     public void SymbolPreservationTest() {
       TestPreservation("-----");
       TestPreservation("#####");
-      TestPreservation("â€•â€•â€•â€•â€•");
-      TestPreservation("â”€â”€â”€â”€â”€");
-      TestPreservation("--##â€•â€•@@--");
+      TestPreservation("¡ª¡ª¡ª¡ª¡ª");
+      TestPreservation("¦¡¦¡¦¡¦¡¦¡");
+      TestPreservation("--##¡ª¡ª@@--");
     }
 
-    [TestMethod]
+    [Fact]
     public void WhitespacePreservationTest1() {
       TestPreservation("\r");
     }
 
-    [TestMethod]
+    [Fact]
     public void WhitespacePreservationTest2() {
       TestPreservation("\n\nd");
     }
 
-    [TestMethod]
+    [Fact]
     public void WhitespacePreservationTest3() {
       TestPreservation("\r\n");
     }
 
-    [TestMethod]
+    [Fact]
     public void WhitespacePreservationTest4() {
-      TestPreservation("\n\n\n ã€€\n\n");
+      TestPreservation("\n\n\n ¡¡\n\n");
     }
   }
 }
