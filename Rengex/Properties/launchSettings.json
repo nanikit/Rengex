@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Rengex": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

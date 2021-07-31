@@ -9,15 +9,14 @@ namespace Rengex.Translator {
   public static class SerialUtility {
     public static BinaryFormatter Formatter = new BinaryFormatter();
 
-    public static async Task WriteObjAsync(this Stream s, object o) {
-      await WriteObjAsync(s, o, CancellationToken.None);
+    public static async Task WriteObjAsync(this Stream stream, object obj) {
+      await WriteObjAsync(stream, obj, CancellationToken.None);
     }
 
-    public static async Task WriteObjAsync(this Stream s, object o, CancellationToken token) {
-      using (MemoryStream ms = GetPrefixedSerialStream(o)) {
-        token.ThrowIfCancellationRequested();
-        await ms.CopyToAsync(s, 8192, token);
-      }
+    public static async Task WriteObjAsync(this Stream stream, object obj, CancellationToken token) {
+      using MemoryStream ms = GetPrefixedSerialStream(obj);
+      token.ThrowIfCancellationRequested();
+      await ms.CopyToAsync(stream, 8192, token);
     }
 
     // async is not useful for MemoryStream: http://stackoverflow.com/a/20805616
@@ -32,26 +31,24 @@ namespace Rengex.Translator {
     }
 
     public static byte[] GetPrefixedSerial(object o) {
-      using (MemoryStream ms = GetPrefixedSerialStream(o)) {
-        byte[] buf = new byte[ms.Length];
-        ms.Read(buf, 0, Convert.ToInt32(ms.Length));
-        return buf;
-      }
+      using MemoryStream ms = GetPrefixedSerialStream(o);
+      byte[] buf = new byte[ms.Length];
+      ms.Read(buf, 0, Convert.ToInt32(ms.Length));
+      return buf;
     }
 
-    public static async Task<T> ReadObjAsync<T>(this Stream s, Action<double> progress = null) {
+    public static async Task<T> ReadObjAsync<T>(this Stream s, Action<double>? progress = null) {
       byte[] lenHeader = await s.ReadLenAsync(sizeof(long));
 
       int len = (int)BitConverter.ToInt64(lenHeader, 0);
       byte[] buf = await s.ReadLenAsync(len, progress);
 
-      using (var ms = new MemoryStream(buf)) {
-        return (T)Formatter.Deserialize(ms);
-      }
+      using var ms = new MemoryStream(buf);
+      return (T)Formatter.Deserialize(ms);
     }
 
     // CancellationToken does nothing for NetworkStream.ReadAsync
-    public static async Task<byte[]> ReadLenAsync(this Stream s, int len, Action<double> progress = null) {
+    public static async Task<byte[]> ReadLenAsync(this Stream s, int len, Action<double>? progress = null) {
       if (len < 0) throw new ArgumentException("len cannnot be negative");
       byte[] buf = new byte[len];
       int read = 0, justRead;
