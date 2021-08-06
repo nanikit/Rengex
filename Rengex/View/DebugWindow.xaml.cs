@@ -21,12 +21,12 @@ namespace Rengex {
       txt = Regex.Replace(txt, @"\\u(....)", @"\x{$1}");
       for (int idx = 0; LookbehindGroup.Match(txt, idx, out Match m); idx = m.Index + 1) {
         if (m.Groups[1].Value.Contains("*")) {
-          txt = txt.Remove(m.Index) + txt.Substring(m.Index + m.Length);
+          txt = txt.Remove(m.Index) + txt[(m.Index + m.Length)..];
         }
       }
       for (int idx = 0, seq = 0; NamedGroup.Match(txt, idx, out Match m); idx = m.Index + 1) {
         string rep = m.Result($"(?<${{1}}{seq++}>$2)");
-        txt = txt.Remove(m.Index) + rep + txt.Substring(m.Index + m.Length);
+        txt = txt.Remove(m.Index) + rep + txt[(m.Index + m.Length)..];
       }
       string jp = Regex.Replace(TextUtils.ClassJap, @"\\u(....)", @"\x{$1}");
       txt = txt.Replace("\\jp", jp);

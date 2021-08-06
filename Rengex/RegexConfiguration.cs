@@ -37,8 +37,6 @@ namespace Rengex {
 
     public string Value;
 
-    public TextSpan() { }
-
     public TextSpan(long offset, long length, string value, string name) {
       Offset = offset;
       Length = length;
@@ -61,7 +59,7 @@ namespace Rengex {
 
     private readonly Regex Root;
     private readonly Dictionary<string, Regex> Procedures;
-    private TimeSpan Timeout;
+    private readonly TimeSpan Timeout;
 
     /// <summary>
     /// Matches to regex pattern &quot;(?prefix...)&quot;
@@ -109,7 +107,7 @@ namespace Rengex {
       IEnumerable<(Group, Capture)> captures = AllCapturesOrderByIdx(m);
       foreach (var (group, capture) in captures) {
         if (group.Name.EndsWith("CC")) {
-          string proc = group.Name.Substring(0, group.Name.Length - 2) + 'F';
+          string proc = group.Name[0..^2] + 'F';
           IEnumerable<TextSpan> spans = Matches(capture.Value, Procedures[proc]);
           foreach (TextSpan span in spans) {
             span.Offset += capture.Index;
@@ -117,7 +115,7 @@ namespace Rengex {
           }
         }
         else if (group.Name.EndsWith("C")) {
-          string proc = group.Name.Substring(0, group.Name.Length - 1) + 'F';
+          string proc = group.Name[0..^1] + 'F';
           Match mch = Procedures[proc].Match(capture.Value);
           IEnumerable<TextSpan> spans = Match(mch);
           foreach (TextSpan span in spans) {
@@ -155,7 +153,7 @@ namespace Rengex {
           throw new ApplicationException($"{name} 그룹 파싱 실패", e);
         }
         // Replace named part for preventing capture
-        p = p.Remove(m.Index + 2) + ':' + p.Substring(m.Index + 4 + name.Length);
+        p = p.Remove(m.Index + 2) + ':' + p[(m.Index + 4 + name.Length)..];
       }
       try {
         dict[""] = new Regex(p, RxoDefault, Timeout);
@@ -218,7 +216,7 @@ namespace Rengex {
       public ReplacePattern(string pat, string replace) {
         if (pat.StartsWith("(?:)")) {
           Extended = true;
-          pat = pat.Substring(4);
+          pat = pat[4..];
         }
 
         pat = pat.Replace(@"\jp", TextUtils.ClassJap);
@@ -238,7 +236,7 @@ namespace Rengex {
       public string Preprocess(string meta, string trans) {
         string from = Pat.Extended ? meta + trans : trans;
         string to = Pat.Original.Replace(from, Pat.Replace);
-        return Pat.Extended ? to.Substring(meta.Length) : to;
+        return Pat.Extended ? to[meta.Length..] : to;
       }
 
       public string Postprocess(string meta, string trans) {
@@ -260,7 +258,7 @@ namespace Rengex {
       public string Postprocess(string meta, string trans) {
         string from = Pat.Extended ? meta + trans : trans;
         string to = Pat.Original.Replace(from, Pat.Replace);
-        return Pat.Extended ? to.Substring(meta.Length) : to;
+        return Pat.Extended ? to[meta.Length..] : to;
       }
     }
 
@@ -271,7 +269,7 @@ namespace Rengex {
 
       public Import(ReplaceConfig includer, string path) {
         Includer = includer;
-        string dir = Path.GetDirectoryName(includer.FullPath);
+        string dir = Path.GetDirectoryName(includer.FullPath)!;
         FullPath = Path.GetFullPath(Path.Combine(dir, path));
       }
 

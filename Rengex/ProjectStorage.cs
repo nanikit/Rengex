@@ -97,14 +97,14 @@ namespace Rengex {
       return includer.StartsWith(Path.GetFullPath(includee));
     }
 
-    private static string GetRelativePathFromQueuePath(string absolute) {
+    private static string? GetRelativePathFromQueuePath(string absolute) {
       if (StartsWithAbsoluteOf(absolute, SourceDirectory)) {
         return GetRelativePathTo(SourceDirectory, absolute);
       }
       if (StartsWithAbsoluteOf(absolute, MetadataDirectory) &&
         absolute.EndsWith(".meta.txt")) {
         string rel = GetRelativePathTo(MetadataDirectory, absolute);
-        return rel.Substring(0, rel.Length - 9);
+        return rel[0..^9];
       }
       if (StartsWithAbsoluteOf(absolute, TranslationDirectory)) {
         string rel = GetRelativePathTo(TranslationDirectory, absolute);
@@ -119,7 +119,7 @@ namespace Rengex {
       return null;
     }
 
-    private string GetRelativePath(string root, string absolute) {
+    private static string GetRelativePath(string root, string absolute) {
       string relative = GetRelativePathTo($"{root}\\", absolute);
       if (relative.Contains("..\\")) {
         throw new Exception("path cannot be upper than root");
@@ -144,7 +144,7 @@ namespace Rengex {
     public static List<CwdDesignator> WalkForSources(string path) {
       var units = new List<CwdDesignator>();
       if (Directory.Exists(path)) {
-        string parent = Path.GetDirectoryName(path);
+        string parent = Path.GetDirectoryName(path)!;
         var files = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories);
         foreach (string file in files) {
           if (!IsConfigFile(file)) {
@@ -153,7 +153,7 @@ namespace Rengex {
         }
       }
       else if (File.Exists(path)) {
-        string dir = Path.GetDirectoryName(path);
+        string dir = Path.GetDirectoryName(path)!;
         units.Add(new CwdDesignator(dir, path));
       }
       return units;
