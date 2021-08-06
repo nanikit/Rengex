@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -85,7 +86,7 @@ namespace Rengex {
     }
 
     private void OnRegex101Click(object sender, RoutedEventArgs e) {
-      System.Diagnostics.Process.Start("https://regex101.com/r/IQeg4l/1");
+      Process.Start(new ProcessStartInfo("explorer.exe", "https://regex101.com/r/IQeg4l/1"));
     }
   }
 }
