@@ -1,4 +1,5 @@
-﻿using Rengex.Translator;
+﻿using Nanikit.Ehnd;
+using Rengex.Translator;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -42,7 +43,7 @@ namespace Rengex {
     private readonly RegexDotConfiguration dotConfig;
     private readonly List<TranslationUnit> translations;
     private string workKind;
-    private readonly SelfTranslator selfTranslator;
+    private readonly EhndTranslator selfTranslator;
 
     /// <summary>
     /// if paths is null, search from metadata folder.
@@ -54,7 +55,7 @@ namespace Rengex {
       Progress = new LabelProgressVM();
       Faults = new ObservableCollection<ILabelProgressVM>();
       Ongoings = new ObservableCollection<ILabelProgressVM>();
-      selfTranslator = new SelfTranslator();
+      selfTranslator = new EhndTranslator(Properties.Settings.Default.EzTransDir);
     }
 
     public Task ImportTranslation() {
@@ -105,9 +106,9 @@ namespace Rengex {
         try {
           await Task.Run(() => item.Process());
         }
-        catch (EztransNotFoundException e) {
+        catch (EhndNotFoundException) {
           Progress.Foreground = LabelProgressVM.FgError;
-          throw e;
+          throw;
         }
         catch (Exception e) {
           Progress.Foreground = LabelProgressVM.FgError;

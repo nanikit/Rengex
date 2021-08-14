@@ -23,7 +23,9 @@ namespace Rengex {
           if (!int.TryParse(args[0], out delay)) {
             delay = 200;
           }
-          var basis = new SelfTranslator(delay);
+
+          var eztransDirectory = Rengex.Properties.Settings.Default.EzTransDir;
+          var basis = new EhndTranslator(eztransDirectory);
           new ChildForkTranslator(basis).Serve().Wait();
         }
       }

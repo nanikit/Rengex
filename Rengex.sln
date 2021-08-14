@@ -13,7 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rengex", "Rengex\Rengex.csproj", "{D3D3BDE8-70EC-425F-BD07-E65D855EFC75}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rengex.Test", "Rengex.Test\Rengex.Test.csproj", "{4D046CF0-3E87-4DC8-B78D-930DFFDF00DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rengex.Test", "Rengex.Test\Rengex.Test.csproj", "{4D046CF0-3E87-4DC8-B78D-930DFFDF00DE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

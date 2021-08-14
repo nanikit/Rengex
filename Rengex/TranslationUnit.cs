@@ -48,7 +48,8 @@ namespace Rengex {
     }
 
     public void MachineTranslate() {
-      MachineTranslate(new SelfTranslator()).Wait();
+      var path = Properties.Settings.Default.EzTransDir;
+      MachineTranslate(new EhndTranslator(path)).Wait();
     }
 
     public void BuildTranslation() {

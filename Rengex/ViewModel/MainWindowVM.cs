@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using Nanikit.Ehnd;
 using Rengex.Translator;
 using System;
 using System.IO;
@@ -143,7 +144,7 @@ namespace Rengex.View {
           Log("작업이 끝났습니다.\r\n");
           return;
         }
-        catch (EztransNotFoundException) {
+        catch (EhndNotFoundException) {
           string ezDir = AskEztransDir();
           if (ezDir == null) {
             return;

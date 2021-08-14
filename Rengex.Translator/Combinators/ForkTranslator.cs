@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nanikit.Ehnd;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,7 +34,7 @@ namespace Rengex.Translator {
         job.Client.TrySetResult(res);
       }
       catch (Exception e) {
-        if (e is EztransNotFoundException) {
+        if (e is EhndNotFoundException) {
           job.Client.TrySetException(e);
           return;
         }
