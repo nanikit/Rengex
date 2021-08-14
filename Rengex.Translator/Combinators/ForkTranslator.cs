@@ -6,22 +6,22 @@ using System.Threading.Tasks;
 
 namespace Rengex.Translator {
   public class ForkTranslator : ITranslator {
-    readonly int PoolSize;
-    readonly Task ManagerTask;
-    readonly List<Task> Workers = new List<Task>();
-    readonly List<ITranslator> Translators = new List<ITranslator>();
-    readonly SimpleBufferBlock<Job> Jobs = new SimpleBufferBlock<Job>();
-    CancellationTokenSource Cancel = new CancellationTokenSource();
+    private readonly int _poolSize;
+    private readonly Task _managerTask;
+    private readonly List<Task> _workers = new List<Task>();
+    private readonly List<ITranslator> _translators = new List<ITranslator>();
+    private readonly SimpleBufferBlock<Job> _jobs = new SimpleBufferBlock<Job>();
+    private CancellationTokenSource? _cancel = new CancellationTokenSource();
 
     public ForkTranslator(int poolSize, ITranslator basis) {
-      PoolSize = Math.Max(1, poolSize);
-      Translators.Add(basis);
-      ManagerTask = Task.Run(() => Manager());
+      _poolSize = Math.Max(1, poolSize);
+      _translators.Add(basis);
+      _managerTask = Task.Run(() => Manager());
     }
 
     public Task<string> Translate(string source) {
       var job = new Job(source);
-      Jobs.Enqueue(job);
+      _jobs.Enqueue(job);
       return job.Client.Task;
     }
 
@@ -33,65 +33,65 @@ namespace Rengex.Translator {
         string res = await translator.Translate(job.Source).ConfigureAwait(false);
         job.Client.TrySetResult(res);
       }
-      catch (Exception e) {
-        if (e is EhndNotFoundException) {
-          job.Client.TrySetException(e);
+      catch (Exception exception) {
+        if (exception is EhndNotFoundException) {
+          job.Client.TrySetException(exception);
           return;
         }
         if (job.RetryCount < 3) {
           job.RetryCount++;
-          Jobs.Enqueue(job);
+          _jobs.Enqueue(job);
         }
         else {
-          job.Client.TrySetException(e);
-          throw e;
+          job.Client.TrySetException(exception);
+          throw;
         }
       }
     }
 
     private async Task Manager() {
-      while (!Cancel?.IsCancellationRequested ?? false) {
+      while (!_cancel?.IsCancellationRequested ?? false) {
         ReflectPoolSize();
         Job job = await GetJobOrDefault().ConfigureAwait(false);
         if (job == null) {
           break;
         }
-        await Schedule(job).ConfigureAwait(false);
+        await ScheduleAndWaitFreeWorker(job).ConfigureAwait(false);
       }
-      foreach (ITranslator translator in Translators) {
+      foreach (ITranslator translator in _translators) {
         translator.Dispose();
       }
     }
 
     private void ReflectPoolSize() {
-      if (Translators.Count == PoolSize) {
+      if (_translators.Count == _poolSize) {
         return;
       }
-      else if (Translators.Count < PoolSize) {
-        for (int i = 1; i < PoolSize; i++) {
-          Translators.Add(new ParentForkTranslator());
+      else if (_translators.Count < _poolSize) {
+        for (int i = 1; i < _poolSize; i++) {
+          _translators.Add(new ParentForkTranslator());
         }
       }
-      else if (Translators.Count > PoolSize) {
-        int pool = Math.Max(1, PoolSize);
-        Translators.RemoveRange(pool, Translators.Count - pool);
-        if (Workers.Count > PoolSize) {
-          Workers.RemoveRange(PoolSize, Workers.Count - PoolSize);
+      else if (_translators.Count > _poolSize) {
+        int pool = Math.Max(1, _poolSize);
+        _translators.RemoveRange(pool, _translators.Count - pool);
+        if (_workers.Count > _poolSize) {
+          _workers.RemoveRange(_poolSize, _workers.Count - _poolSize);
         }
       }
     }
 
     private async Task<Job> GetJobOrDefault() {
-      Task<Job> dispatch = Jobs.ReceiveAsync(Cancel.Token);
+      Task<Job> dispatch = _jobs.ReceiveAsync(_cancel!.Token);
       _ = await Task.WhenAny(dispatch).ConfigureAwait(false);
-      if (Cancel?.IsCancellationRequested ?? true) {
+      if (_cancel?.IsCancellationRequested ?? true) {
         return null;
       }
       Job job = await dispatch.ConfigureAwait(false);
       return job;
     }
 
-    private async Task Schedule(Job job) {
+    private async Task ScheduleAndWaitFreeWorker(Job job) {
       if (ScheduleAtCompleted(job) || ScheduleWithMoreWorker(job)) {
         return;
       }
@@ -99,29 +99,30 @@ namespace Rengex.Translator {
     }
 
     private bool ScheduleWithMoreWorker(Job job) {
-      if (Workers.Count < Translators.Count) {
-        Workers.Add(Worker(Translators[Workers.Count], job));
+      if (_workers.Count < _translators.Count) {
+        _workers.Add(Worker(_translators[_workers.Count], job));
         return true;
       }
       return false;
     }
 
     private async Task ScheduleAfterCompletion(Job job) {
-      var abort = Task.Delay(TimeSpan.FromDays(10), Cancel.Token);
-      var seats = Task.WhenAny(Workers);
+      var abort = Task.Delay(TimeSpan.FromDays(10), _cancel!.Token);
+      var seats = Task.WhenAny(_workers);
       Task fin = await Task.WhenAny(abort, seats).ConfigureAwait(false);
       if (fin == abort) {
         return;
       }
+
       Task vacant = await seats.ConfigureAwait(false);
-      int endedIdx = Workers.IndexOf(vacant);
-      Workers[endedIdx] = Worker(Translators[endedIdx], job);
+      int endedIdx = _workers.IndexOf(vacant);
+      _workers[endedIdx] = Worker(_translators[endedIdx], job);
     }
 
     private bool ScheduleAtCompleted(Job job) {
-      int endedIdx = Workers.FindIndex(x => x.IsCompleted);
+      int endedIdx = _workers.FindIndex(x => x.IsCompleted);
       if (endedIdx != -1) {
-        Workers[endedIdx] = Worker(Translators[endedIdx], job);
+        _workers[endedIdx] = Worker(_translators[endedIdx], job);
         return true;
       }
       return false;
@@ -129,14 +130,15 @@ namespace Rengex.Translator {
 
     public void Dispose() {
       Dispose(true);
+      GC.SuppressFinalize(this);
     }
 
     protected virtual void Dispose(bool disposing) {
       if (disposing) {
-        if (Cancel != null) {
-          Cancel.Cancel();
-          Cancel.Dispose();
-          Cancel = null;
+        if (_cancel != null) {
+          _cancel.Cancel();
+          _cancel.Dispose();
+          _cancel = null;
         }
       }
     }
