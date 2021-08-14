@@ -2,9 +2,14 @@
 
 ![프로그램 창 이미지](doc/mainwindow.png)
 
-텍스트 파일의 일부분만 추출해 번역하는 툴입니다. 기계 번역 엔진으로 Ehnd를 사용헙니다. 사용 전에 Ehnd를 설치해주세요.
+텍스트 파일의 일부분만 추출해 번역하는 툴입니다.
 
-범용으로 만들었지만 때문에 전용 툴보다 실제 적용엔 어려울 수 있습니다.
+## 설치
+
+기계 번역 엔진으로 [Ehnd](https://github.com/sokcuri/ehnd)를 사용헙니다.
+사용 전에 [Ehnd를 설치](https://blog.naver.com/PostView.nhn?blogId=sokcuri&logNo=220301117949)해주세요.
+
+베타 버전을 사용한다면 [.NET 5](https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-5.0.9-windows-x64-installer)를 추가로 설치해주세요.
 
 ## 텍스트 파일 번역법
 
@@ -19,7 +24,7 @@
 
 아래 경로에 있는 파일들은 그냥 프로그램에 드래그해도 폴더 구조를 보존해줍니다.
 
-드래그 할 때 자동으로 결과물을 만들어 주는 게 싫다면 버튼을 우클릭해 기본 행동을 바꿀 수 있습니다.
+드래그 할 때 자동으로 결과물을 만들어 주는 게 싫다면 버튼을 우클릭해 기본 동작을 바꿀 수 있습니다.
 
 ### 1_source/번역파일명
 번역파일을 드래그하면 기본으로 그 파일을 복사해옵니다.
