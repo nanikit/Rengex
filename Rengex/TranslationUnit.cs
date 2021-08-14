@@ -1,11 +1,12 @@
-﻿using Rengex.Translator;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Rengex {
+  using Rengex.Translator;
+  using System;
+  using System.Collections.Generic;
+  using System.IO;
+  using System.Text;
+  using System.Threading.Tasks;
 
-namespace Rengex {
-  interface IJpToKrable {
+  internal interface IJpToKrable {
     void ExtractSourceText();
     Task MachineTranslate(ITranslator translator);
     void BuildTranslation();
@@ -13,12 +14,12 @@ namespace Rengex {
 
   public class TranslationUnit : IJpToKrable {
 
-    static readonly UTF8Encoding UTF8WithBom = new UTF8Encoding(true);
-    static readonly Encoding CP949 = Encoding.GetEncoding(949);
+    public IProjectStorage Workspace { get; set; }
+    public RegexDotConfiguration DotConfig { get; set; }
 
-    public readonly IProjectStorage Workspace;
-    public readonly RegexDotConfiguration DotConfig;
-    private RegexConfiguration Config;
+    private static readonly UTF8Encoding _utf8WithBom = new UTF8Encoding(true);
+    private static readonly Encoding _cp949 = Encoding.GetEncoding(949);
+    private RegexConfiguration? _config;
 
     public TranslationUnit(RegexDotConfiguration dot, IProjectStorage workspace) {
       DotConfig = dot;
@@ -31,8 +32,8 @@ namespace Rengex {
         return;
       }
       string txt = sourceText.Content;
-      Config = DotConfig.GetConfiguration(Workspace.SourcePath);
-      WriteIntermediates(Config.Matches(txt));
+      _config = DotConfig.GetConfiguration(Workspace.SourcePath);
+      WriteIntermediates(_config.Matches(txt));
     }
 
     public async Task MachineTranslate(ITranslator translator) {
@@ -48,7 +49,7 @@ namespace Rengex {
     }
 
     public void MachineTranslate() {
-      var path = Properties.Settings.Default.EzTransDir;
+      string? path = Properties.Settings.Default.EzTransDir;
       MachineTranslate(new EhndTranslator(path)).Wait();
     }
 
@@ -59,26 +60,26 @@ namespace Rengex {
         File.Copy(Workspace.SourcePath, destPath, true);
         return;
       }
-      Encoding destEnc = sourceText.Encoding.CodePage == 932 ? CP949 : UTF8WithBom;
-      using (var meta = new MetadataCsvReader(Workspace.MetadataPath))
-      using (StreamReader trans = File.OpenText(translation))
-      using (var source = new StringReader(sourceText.Content))
-      using (var dest = new StreamWriter(File.Create(destPath), destEnc))
-        CompileTranslation(meta, trans, source, dest);
+
+      Encoding destinationEncoding = sourceText.Encoding.CodePage == 932 ? _cp949 : _utf8WithBom;
+      using var meta = new MetadataCsvReader(Workspace.MetadataPath);
+      using StreamReader trans = File.OpenText(translation);
+      using var source = new StringReader(sourceText.Content);
+      using var dest = new StreamWriter(File.Create(destPath), destinationEncoding);
+      CompileTranslation(meta, trans, source, dest);
     }
 
     private void WriteIntermediates(IEnumerable<TextSpan> spans) {
-      Config = DotConfig.GetConfiguration(Workspace.SourcePath);
-      using (StreamWriter meta = TextUtils.GetReadSharedWriter(Workspace.MetadataPath))
-      using (StreamWriter trans = TextUtils.GetReadSharedWriter(Workspace.TranslationPath)) {
-        foreach (TextSpan span in spans) {
-          string value = span.Value;
-          string newLines = new string('\n', TextUtils.CountLines(value));
-          meta.WriteLine($"{span.Offset},{span.Length},{span.Title}{newLines}");
+      _config = DotConfig.GetConfiguration(Workspace.SourcePath);
+      using StreamWriter meta = TextUtils.GetReadSharedWriter(Workspace.MetadataPath);
+      using StreamWriter trans = TextUtils.GetReadSharedWriter(Workspace.TranslationPath);
+      foreach (TextSpan span in spans) {
+        string value = span.Value;
+        string newLines = new string('\n', TextUtils.CountLines(value));
+        meta.WriteLine($"{span.Offset},{span.Length},{span.Title}{newLines}");
 
-          string preprocessed = Config.PreReplace(span.Title, value);
-          trans.WriteLine(preprocessed);
-        }
+        string preprocessed = _config.PreReplace(span.Title, value);
+        trans.WriteLine(preprocessed);
       }
     }
 
@@ -94,15 +95,15 @@ namespace Rengex {
     }
 
     private static string GetPathWithoutExtension(string path) {
-      string dir = Path.GetDirectoryName(path);
+      string dir = Path.GetDirectoryName(path)!;
       string filename = Path.GetFileNameWithoutExtension(path);
       return $"{dir}\\{filename}";
     }
 
-    private void CompileTranslation(MetadataCsvReader meta, TextReader trans, TextReader source, TextWriter dest) {
+    private void CompileTranslation(MetadataCsvReader meta, TextReader translation, TextReader source, TextWriter dest) {
       var src = new CharCountingReader(source);
-      var sub = new SpanPairReader(trans);
-      Config = DotConfig.GetConfiguration(Workspace.SourcePath);
+      var substitution = new SpanPairReader(translation);
+      _config = DotConfig.GetConfiguration(Workspace.SourcePath);
 
       foreach (TextSpan span in meta.GetSpans()) {
         int preserveSize = (int)span.Offset - src.Position;
@@ -110,22 +111,20 @@ namespace Rengex {
           return;
         }
 
-        string translated = sub.ReadCorrespondingSpan(span);
+        string translated = substitution.ReadCorrespondingSpan(span);
         translated = ApplyPostProcess(span, src, translated);
         if (translated == null) {
           continue;
         }
         dest.Write(translated);
       }
-      src.TextCopyTo(dest, int.MaxValue);
+      _ = src.TextCopyTo(dest, int.MaxValue);
+      // TODO: warn mismatch of translation having more line
     }
 
     private string ApplyPostProcess(TextSpan span, CharCountingReader src, string translation) {
-      if (translation == null) {
-        return null;
-      }
       string original = src.ReadString((int)span.Length);
-      return Config.PostReplace(span.Title ?? "", original, translation);
+      return _config!.PostReplace(span.Title ?? "", original, translation);
     }
 
   }
@@ -143,29 +142,29 @@ namespace Rengex {
     }
 
     public string ReadCorrespondingSpan(TextSpan span) {
-      int spanLineCnt = TextUtils.CountLines(span.Value);
-      return ReadCorrespondingLines(spanLineCnt);
+      int spanLineCount = TextUtils.CountLines(span.Value);
+      return ReadCorrespondingLines(spanLineCount);
     }
 
     private string ReadCorrespondingLines(int n) {
-      Buffer.Clear();
+      _ = Buffer.Clear();
 
-      int lineReadCnt = 0;
-      while (lineReadCnt < n) {
+      int lineCount = 0;
+      while (lineCount < n) {
         int c = Reader.Read();
         if (c < 0) {
-          throw new EndOfStreamException();
+          throw new ApplicationException("번역파일 줄 수가 부족합니다");
         }
         if (c == '\r') {
-          lineReadCnt++;
-          bool isEnd = lineReadCnt >= n;
+          lineCount++;
+          bool isEnd = n <= lineCount;
           CopyTrailingLF(isEnd);
           continue;
         }
         if (c == '\n') {
-          lineReadCnt++;
+          lineCount++;
         }
-        Buffer.Append((char)c);
+        _ = Buffer.Append((char)c);
       }
 
       return Buffer.ToString();
@@ -174,14 +173,14 @@ namespace Rengex {
     private void CopyTrailingLF(bool skipBuffer) {
       if (skipBuffer) {
         if (Reader.Peek() == '\n') {
-          Reader.Read();
+          _ = Reader.Read();
         }
       }
       else {
-        Buffer.Append('\r');
+        _ = Buffer.Append('\r');
         if (Reader.Peek() == '\n') {
-          Reader.Read();
-          Buffer.Append('\n');
+          _ = Reader.Read();
+          _ = Buffer.Append('\n');
         }
       }
     }
