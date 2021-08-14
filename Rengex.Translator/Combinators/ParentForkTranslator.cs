@@ -1,60 +1,63 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Rengex.Translator {
   public class ParentForkTranslator : ITranslator {
-    public const string DefaultPipeName = "rengex_subtrans";
+    private readonly string _pipeName;
+    private readonly NamedPipeServerStream _pipeServer;
+    private readonly CancellationToken _cancellation;
+    private Process? _child;
 
-    /// <summary>
-    /// Ehnd에서 크래시가 나는 경우가 있는데 견고한 방법을 찾지 못함.
-    /// </summary>
-    int MsInitDelay = 200;
-    Process? Child;
-    readonly string PipeName;
-    NamedPipeServerStream PipeServer;
+    public ParentForkTranslator(CancellationToken cancellation) {
+      _cancellation = cancellation;
 
-    public ParentForkTranslator(string pipeName = DefaultPipeName) {
-      PipeName = pipeName;
-      PipeServer = new NamedPipeServerStream(PipeName, PipeDirection.InOut, Environment.ProcessorCount + 2);
+      var guid = Guid.NewGuid();
+      _pipeName = $"{guid}";
+      _pipeServer = new NamedPipeServerStream(_pipeName);
     }
 
     public async Task<string> Translate(string source) {
-      try {
-        await SendTranslationWork(source).ConfigureAwait(false);
-        return await ReceiveTranslation().ConfigureAwait(false);
-      }
-      catch {
-        MsInitDelay += 500;
-        throw;
-      }
+      await SendTranslationWork(source).ConfigureAwait(false);
+      return await ReceiveTranslation().ConfigureAwait(false);
     }
 
     private async Task SendTranslationWork(string script) {
-      if (!PipeServer.IsConnected) {
-        await InitializeChild().ConfigureAwait(false);
-      }
-      await PipeServer.WriteObjAsync(script).ConfigureAwait(false);
+      await EnsureChild().ConfigureAwait(false);
+      await _pipeServer.WriteObjAsync(script).ConfigureAwait(false);
     }
 
-    private async Task InitializeChild() {
-      DisposeChild();
-      Task connection = PipeServer.WaitForConnectionAsync();
-      string path = Process.GetCurrentProcess().MainModule.FileName;
-      Child = Process.Start(path, MsInitDelay.ToString());
-      Task finished = await Task.WhenAny(connection, Task.Delay(3000)).ConfigureAwait(false);
-      if (finished != connection) {
-        throw new ApplicationException("서브 프로세스가 응답하지 않습니다.");
+    private async Task EnsureChild() {
+      if (_pipeServer.IsConnected) {
+        return;
       }
+      if (!await RecreateAndConnect().ConfigureAwait(false)) {
+        throw new ApplicationException("번역 프로세스 초기화에 실패했습니다");
+      }
+    }
+
+    private async Task<bool> RecreateAndConnect() {
+      DisposeChild();
+
+      Task connection = _pipeServer.WaitForConnectionAsync(_cancellation);
+
+      string path = Process.GetCurrentProcess().MainModule!.FileName!;
+      _child = Process.Start(path, new string[] { "--connect", _pipeName });
+      Task kill = _child.WaitForExitAsync(_cancellation);
+
+      Task finished = await Task.WhenAny(connection, kill).ConfigureAwait(false);
+      return finished == connection;
     }
 
     private async Task<string> ReceiveTranslation() {
-      return await PipeServer.ReadObjAsync<string>().ConfigureAwait(false);
+      return await _pipeServer.ReadObjAsync<string>().ConfigureAwait(false);
     }
 
     public void Dispose() {
       Dispose(true);
+      GC.SuppressFinalize(this);
     }
 
     protected virtual void Dispose(bool disposing) {
@@ -65,20 +68,19 @@ namespace Rengex.Translator {
     }
 
     private void DisposePipe() {
-      if (PipeServer != null) {
-        if (PipeServer.IsConnected) {
-          PipeServer.WriteObjAsync(false).Wait(5000);
-        }
-        PipeServer.Dispose();
+      if (_pipeServer.IsConnected) {
+        _pipeServer.WriteObjAsync(false).Wait(5000);
       }
+      _pipeServer.Dispose();
     }
 
     private void DisposeChild() {
-      if (Child != null) {
-        if (!Child.HasExited) {
-          Child.Kill();
+      if (_child != null) {
+        if (!_child.HasExited) {
+          _child.Kill();
         }
-        Child.Dispose();
+        _child.Dispose();
+        _child = null;
       }
     }
   }

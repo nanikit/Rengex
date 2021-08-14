@@ -8,15 +8,16 @@ namespace Rengex.Translator {
     readonly ITranslator Translator;
     readonly NamedPipeClientStream PipeClient;
 
-    public ChildForkTranslator(ITranslator basis, string pipeName = ParentForkTranslator.DefaultPipeName) {
-      PipeClient = new NamedPipeClientStream(".", pipeName);
+    public ChildForkTranslator(ITranslator basis, string pipeName) {
+      PipeClient = new NamedPipeClientStream(pipeName);
       Translator = basis;
     }
 
     public async Task Serve() {
-      await PipeClient.ConnectAsync(1000).ConfigureAwait(false);
+      await PipeClient.ConnectAsync(10000).ConfigureAwait(false);
       try {
         if (!PipeClient.IsConnected) {
+          System.Diagnostics.Debug.WriteLine("Child translation process connect timeout");
           return;
         }
         while (true) {

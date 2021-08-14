@@ -1,12 +1,12 @@
-﻿using Rengex.Translator;
-using System;
-using System.IO;
-using System.Runtime.ExceptionServices;
-using System.Text;
-using System.Windows;
-using System.Windows.Threading;
+﻿namespace Rengex {
+  using Rengex.Translator;
+  using System;
+  using System.IO;
+  using System.Runtime.ExceptionServices;
+  using System.Text;
+  using System.Windows;
+  using System.Windows.Threading;
 
-namespace Rengex {
   /// <summary>
   /// Interaction logic for App.xaml
   /// </summary>
@@ -15,18 +15,13 @@ namespace Rengex {
     [HandleProcessCorruptedStateExceptions]
     public static void Main(string[] args) {
       try {
-        if (args.Length == 0) {
-          LaunchWPF();
-        }
-        else {
-          int delay;
-          if (!int.TryParse(args[0], out delay)) {
-            delay = 200;
-          }
-
+        if (args.Length == 2 && Guid.TryParse(args[1], out Guid guid)) {
           var eztransDirectory = Rengex.Properties.Settings.Default.EzTransDir;
           var basis = new EhndTranslator(eztransDirectory);
-          new ChildForkTranslator(basis).Serve().Wait();
+          new ChildForkTranslator(basis, $"{guid}").Serve().Wait();
+        }
+        else {
+          LaunchWPF();
         }
       }
       catch (Exception e) {
