@@ -10,7 +10,7 @@
 			"request": "launch",
 			"preLaunchTask": "build",
 			// If you have changed target frameworks, make sure to update the program path.
-			"program": "${workspaceFolder}/Rengex/bin/Debug/net5.0-windows/Rengex.dll",
+			"program": "${workspaceFolder}/Rengex/bin/Debug/net5.0-windows/Rengex.exe",
 			"args": [],
 			"cwd": "${workspaceFolder}/Rengex",
 			// For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
