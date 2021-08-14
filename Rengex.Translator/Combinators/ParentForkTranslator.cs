@@ -25,9 +25,9 @@ namespace Rengex.Translator {
         await SendTranslationWork(source).ConfigureAwait(false);
         return await ReceiveTranslation().ConfigureAwait(false);
       }
-      catch (Exception e) {
+      catch {
         MsInitDelay += 500;
-        throw e;
+        throw;
       }
     }
 
@@ -43,7 +43,7 @@ namespace Rengex.Translator {
       Task connection = PipeServer.WaitForConnectionAsync();
       string path = Process.GetCurrentProcess().MainModule.FileName;
       Child = Process.Start(path, MsInitDelay.ToString());
-      Task finished = await Task.WhenAny(connection, Task.Delay(2000)).ConfigureAwait(false);
+      Task finished = await Task.WhenAny(connection, Task.Delay(3000)).ConfigureAwait(false);
       if (finished != connection) {
         throw new ApplicationException("서브 프로세스가 응답하지 않습니다.");
       }
