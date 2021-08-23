@@ -15,7 +15,7 @@ namespace Rengex.View {
   //     </ResourceDictionary.MergedDictionaries>
   //  </ResourceDictionary>
   // </Window.Resources>
-  public class FlatDictionary : ResourceDictionary, ISupportInitialize {
+  internal class FlatDictionary : ResourceDictionary, ISupportInitialize {
 
     // TODO: It seems to be able to support autocomplete by EndInit() and
     // LoadComponent(object, Uri), but have limitation from
@@ -23,8 +23,8 @@ namespace Rengex.View {
 
     private class Proxy { }
 
-    private string _Key;
-    public string Key {
+    private string? _Key;
+    public string? Key {
       get { return _Key; }
       set {
         _Key = value;
@@ -34,9 +34,9 @@ namespace Rengex.View {
       }
     }
 
-    private Uri _DesignSource;
-    public Uri DesignSource {
-      get { return _DesignSource; }
+    private Uri? _DesignSource;
+    public Uri? DesignSource {
+      get => _DesignSource;
       set {
         _DesignSource = value;
         if (Key != null) {
@@ -49,7 +49,7 @@ namespace Rengex.View {
       this[Key] = new Proxy();
     }
 
-    protected override void OnGettingValue(object key, ref object value, out bool canCache) {
+    protected override void OnGettingValue(object key, ref object? value, out bool canCache) {
       if (value is Proxy) {
         value = LoadComponent(DesignSource);
         canCache = false;
@@ -59,19 +59,18 @@ namespace Rengex.View {
       }
     }
 
-    private object LoadComponent(Uri uri) {
+    private static object? LoadComponent(Uri? uri) {
       if (uri == null) {
         return null;
       }
 
       if (uri.OriginalString.Length >= 2 && uri.OriginalString[1] == ':') {
-        using (var f = new FileStream(uri.OriginalString, FileMode.Open)) {
-          return XamlReader.Load(f);
-        }
+        using var stream = new FileStream(uri.OriginalString, FileMode.Open);
+        return XamlReader.Load(stream);
       }
 
       Uri relUri;
-      if (uri.OriginalString.StartsWith("pack:")) {
+      if (uri.OriginalString.StartsWith("pack:", StringComparison.Ordinal)) {
         relUri = new Uri($";component{uri.AbsolutePath}", UriKind.Relative);
       }
       else {
