@@ -150,5 +150,9 @@ namespace Rengex.View {
     private void TbLogOnPreviewDragOver(object sender, DragEventArgs e) {
       e.Handled = true;
     }
+
+    private void AskAndImport(object sender, RoutedEventArgs e) {
+      vm.AskAndImport();
+    }
   }
 }

@@ -48,7 +48,7 @@ namespace Rengex {
     /// <summary>
     /// if paths is null, search from metadata folder.
     /// </summary>
-    public Jp2KrTranslationVM(RegexDotConfiguration dot, string[] paths = null) {
+    public Jp2KrTranslationVM(RegexDotConfiguration dot, string[]? paths = null) {
       dotConfig = dot;
       workerCount = Environment.ProcessorCount;
       translations = paths?.SelectMany(p => WalkForSources(p))?.ToList();

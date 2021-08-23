@@ -1,15 +1,13 @@
-﻿using Microsoft.Win32;
-using Nanikit.Ehnd;
-using Rengex.Translator;
-using System;
-using System.IO;
-using System.Threading.Tasks;
-using System.Windows.Data;
-using System.Windows.Input;
-using System.Windows.Markup;
-using System.Windows.Media;
-
-namespace Rengex.View {
+﻿namespace Rengex.View {
+  using Microsoft.Win32;
+  using Nanikit.Ehnd;
+  using System;
+  using System.IO;
+  using System.Threading.Tasks;
+  using System.Windows.Data;
+  using System.Windows.Input;
+  using System.Windows.Markup;
+  using System.Windows.Media;
 
   public enum Operation {
     None, Import, Translate, Export, Onestop
@@ -20,10 +18,7 @@ namespace Rengex.View {
     private static readonly Brush transparentBrush = new SolidColorBrush(Colors.Transparent);
 
     public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-      if (value.Equals(parameter)) {
-        return azureBrush;
-      }
-      return transparentBrush;
+      return value.Equals(parameter) ? azureBrush : transparentBrush;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
@@ -35,7 +30,7 @@ namespace Rengex.View {
     }
   }
 
-  class MainWindowVM : ViewModelBase {
+  internal class MainWindowVM : ViewModelBase {
 
     public Operation DefaultOperation {
       get => defaultButton;
@@ -45,14 +40,14 @@ namespace Rengex.View {
     public ICommand OperateCommand { get; private set; }
     public ICommand PinCommand { get; private set; }
 
-    public event Action<object> LogAdded;
+    public event Action<object> LogAdded = delegate { };
 
     // TODO: hide this
     public RegexDotConfiguration dotConfig;
 
-    private string[] paths;
+    private string[]? paths;
     private Operation defaultButton;
-    private Jp2KrTranslationVM translator;
+    private Jp2KrTranslationVM? translator;
 
     public MainWindowVM() {
       DefaultOperation = Operation.Onestop;
@@ -64,6 +59,13 @@ namespace Rengex.View {
     public void RunDefaultOperation(string[] paths) {
       this.paths = paths;
       RunOperation(DefaultOperation);
+    }
+
+    public void AskAndImport() {
+      paths = AskImportPaths();
+      if (paths != null) {
+        Import();
+      }
     }
 
     private void RunOperation(Operation kind) {
@@ -80,25 +82,21 @@ namespace Rengex.View {
         case Operation.Onestop:
           Onestop();
           break;
+        case Operation.None:
+          break;
       }
     }
 
     private void PinAction(Operation kind) {
-      if (DefaultOperation == kind) {
-        DefaultOperation = Operation.None;
-      }
-      else {
-        DefaultOperation = kind;
-      }
+      DefaultOperation = DefaultOperation == kind ? Operation.None : kind;
     }
 
-    private bool IsIdle() => translator == null;
+    private bool IsIdle() {
+      return translator == null;
+    }
 
     private void Import() {
-      paths = AskImportPaths();
-      if (paths != null) {
-        _ = Operate(tvm => tvm.ImportTranslation());
-      }
+      _ = Operate(tvm => tvm.ImportTranslation());
     }
     private void Translate() {
       _ = Operate(tvm => tvm.MachineTranslation());
@@ -161,7 +159,7 @@ namespace Rengex.View {
     }
 
     // TODO: Separate as VM
-    private string AskEztransDir() {
+    private string? AskEztransDir() {
       var ofd = new OpenFileDialog {
         CheckPathExists = true,
         Multiselect = false,
@@ -174,7 +172,7 @@ namespace Rengex.View {
     }
 
     // TODO: Separate as VM
-    private string[] AskImportPaths() {
+    private string[]? AskImportPaths() {
       var ofd = new OpenFileDialog {
         CheckPathExists = false,
         Multiselect = true,
