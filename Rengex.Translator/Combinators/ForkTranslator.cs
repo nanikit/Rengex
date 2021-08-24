@@ -4,13 +4,14 @@
   using System.Collections.Generic;
   using System.Threading;
   using System.Threading.Tasks;
+  using System.Threading.Tasks.Dataflow;
 
   public class ForkTranslator : ITranslator {
     private readonly int _poolSize;
     private readonly Task _managerTask;
     private readonly List<Task> _workers = new List<Task>();
     private readonly List<ITranslator> _translators = new List<ITranslator>();
-    private readonly SimpleBufferBlock<Job> _jobs = new SimpleBufferBlock<Job>();
+    private readonly BufferBlock<Job> _jobs = new BufferBlock<Job>();
     private readonly CancellationTokenSource _cancel = new CancellationTokenSource();
     private bool _isDisposed;
 
@@ -22,7 +23,7 @@
 
     public Task<string> Translate(string source) {
       var job = new Job(source);
-      _jobs.Enqueue(job);
+      _ = _jobs.Post(job);
       return job.Client.Task;
     }
 
@@ -41,7 +42,7 @@
         }
         if (job.RetryCount < 3) {
           job.RetryCount++;
-          _jobs.Enqueue(job);
+          _ = _jobs.Post(job);
         }
         else {
           _ = job.Client.TrySetException(exception);
@@ -108,8 +109,8 @@
     }
 
     private async Task ScheduleAfterCompletion(Job job) {
-      Task? abort = Task.Delay(TimeSpan.FromDays(10), _cancel!.Token);
-      Task<Task>? seats = Task.WhenAny(_workers);
+      var abort = Task.Delay(TimeSpan.FromDays(10), _cancel!.Token);
+      var seats = Task.WhenAny(_workers);
       Task fin = await Task.WhenAny(abort, seats).ConfigureAwait(false);
       if (fin == abort) {
         return;

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 
 namespace Rengex {
 
@@ -33,8 +34,8 @@ namespace Rengex {
 
     public event FileSystemEventHandler Commited = delegate { };
 
-    private readonly SimpleBufferBlock<FileSystemEventArgs> ChangeQueue
-      = new SimpleBufferBlock<FileSystemEventArgs>();
+    private readonly BufferBlock<FileSystemEventArgs> ChangeQueue
+      = new BufferBlock<FileSystemEventArgs>();
     private readonly CancellationTokenSource Cancel = new CancellationTokenSource();
     private readonly Task TimeoutFilter;
     private readonly int MsTimeout;
@@ -57,8 +58,8 @@ namespace Rengex {
       watcher.Renamed += ConfigChanged;
     }
 
-    private void ConfigChanged(object sender, FileSystemEventArgs e) {
-      ChangeQueue.Enqueue(e);
+    private void ConfigChanged(object sender, FileSystemEventArgs fsEvent) {
+      ChangeQueue.Post(fsEvent);
     }
 
     private async Task DispatchDeduplicatedEvents() {
