@@ -43,14 +43,10 @@
       if (!File.Exists(Workspace.TranslationPath)) {
         return;
       }
-      string jp = File.ReadAllText(Workspace.TranslationPath);
-      string kr = await translator.Translate(jp).ConfigureAwait(false);
-      File.WriteAllText(GetAlternativeTranslationPath(), kr);
-    }
 
-    public void MachineTranslate() {
-      string? path = Properties.Settings.Default.EzTransDir;
-      MachineTranslate(new EhndTranslator(path)).Wait();
+      string jp = await File.ReadAllTextAsync(Workspace.TranslationPath).ConfigureAwait(false);
+      string kr = await translator.Translate(jp).ConfigureAwait(false);
+      await File.WriteAllTextAsync(GetAlternativeTranslationPath(), kr).ConfigureAwait(false);
     }
 
     public void BuildTranslation() {
