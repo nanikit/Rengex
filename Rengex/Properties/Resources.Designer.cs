@@ -61,7 +61,7 @@ namespace Rengex.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to 2019-01-13 
+        ///   Looks up a localized string similar to 2021-08-29 
         ///.
         /// </summary>
         internal static string BuildDate {
@@ -74,7 +74,7 @@ namespace Rengex.Properties {
         ///   Looks up a localized string similar to # 가져오기 단계에서 추출할 텍스트의 정규식 파일입니다. 기본값으로 파일 전체를 번역합니다.
         ///# 파일 전체가 하나의 정규식이고, #으로 시작하는 줄은 주석으로 처리됩니다.# (?&lt;영문이름&gt;)으로 감싼 그룹의 내용만 추출합니다.
         ///# 닷넷 정규식 문법 URL: https://docs.microsoft.com/ko-kr/dotnet/standard/base-types/regular-expression-language-quick-reference
-        ///# 정규식 테스트 URL: https://regex101.com/r/IQeg4l/1
+        ///# 정규식 테스트 URL: https://regex101.com/r/dqgl16/1
         ///
         ///(?&lt;name&gt;[^\0]*)
         ///.
@@ -90,7 +90,7 @@ namespace Rengex.Properties {
         ///# 첫째는 패턴 정규식입니다. 찾은 모든 해당 패턴을 치환합니다.
         ///# 패턴 시작 부분에 (?=)(?:)를 붙일 수 있습니다.
         ///# (?=)는 번역 전의 치환 규칙(이하 전처리)임을 의미합니다.
-        ///# (?:)는 전처리에선 &quot;그룹이름\0&quot;을, 후처리에선 &quot;그룹이름\0원문\0&quot;을 앞에 붙여달라는 것을 의미합니다.
+        ///# (?:)는 전처리에선 &quot;\0그룹이름&quot;을, 후처리에선 &quot;\0원문\0그룹이름&quot;을 뒤에 붙여달라는 것을 의미합니다.
         ///# 
         ///# 둘째는 치환 정규식입니다. $1등으로 이전 문자열 보존이 가능합니다.
         ///# 빈 문자열을 넣고 싶으면 비우지 말고 $을 적습니다.
@@ -99,9 +99,9 @@ namespace Rengex.Properties {
         ///# 치환은 한 패턴이 성공하더라도 전부 수행됩니다.
         ///.
         /// </summary>
-        internal static string DefaultRepla {
+        internal static string DefaultReplace {
             get {
-                return ResourceManager.GetString("DefaultRepla", resourceCulture);
+                return ResourceManager.GetString("DefaultReplace", resourceCulture);
             }
         }
     }

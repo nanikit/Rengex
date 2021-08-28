@@ -234,9 +234,9 @@ namespace Rengex {
       }
 
       public string Preprocess(string meta, string trans) {
-        string from = Pat.Extended ? meta + trans : trans;
+        string from = Pat.Extended ? $"{trans}\0{meta}" : trans;
         string to = Pat.Original.Replace(from, Pat.Replace);
-        return Pat.Extended ? to[meta.Length..] : to;
+        return Pat.Extended ? to[..(to.Length - meta.Length - 1)] : to;
       }
 
       public string Postprocess(string meta, string trans) {
@@ -256,9 +256,9 @@ namespace Rengex {
       }
 
       public string Postprocess(string meta, string trans) {
-        string from = Pat.Extended ? meta + trans : trans;
+        string from = Pat.Extended ? $"{trans}\0{meta}" : trans;
         string to = Pat.Original.Replace(from, Pat.Replace);
-        return Pat.Extended ? to[meta.Length..] : to;
+        return Pat.Extended ? to[..(to.Length - meta.Length - 1)] : to;
       }
     }
 
@@ -316,7 +316,7 @@ namespace Rengex {
     /// <param name="src">번역 전 원문</param>
     /// <returns>전처리된 문자열</returns>
     public string PreReplace(string name, string src) {
-      return PreReplaceInternal(name + '\0', src);
+      return PreReplaceInternal(name, src);
     }
 
     public string PreReplaceInternal(string meta, string src) {
@@ -335,7 +335,7 @@ namespace Rengex {
     /// <param name="trans">번역 후 문자열</param>
     /// <returns>최종 문자열</returns>
     public string PostReplace(string name, string src, string trans) {
-      return PostReplaceInternal($"{name}\0{src}\0", trans);
+      return PostReplaceInternal($"{src}\0{name}", trans);
     }
 
     private string PostReplaceInternal(string meta, string trans) {
@@ -366,7 +366,8 @@ namespace Rengex {
           if (IsCommentLine(Line.Current)) {
             continue;
           }
-          else if (ReadImportLine(out Import import)) {
+          Import? import = ReadImportLine();
+          if (import != null) {
             rules.Add(import);
           }
           else {
@@ -381,17 +382,17 @@ namespace Rengex {
         return string.IsNullOrWhiteSpace(line) || line[0] == '#';
       }
 
-      private bool ReadImportLine(out Import import) {
+      private Import? ReadImportLine() {
         string line = Line.Current;
         if (line[0] != '*') {
-          import = null;
-          return false;
+          return null;
         }
-        import = new Import(ReplaceConfig, line.Substring(1));
+
+        var import = new Import(ReplaceConfig, line[1..]);
         if (!File.Exists(import.FullPath)) {
           throw new ApplicationException($"참조 파일이 존재하지 않습니다: {import.FullPath}");
         }
-        return true;
+        return import;
       }
 
       private IReplacer ReadPatternLines() {
@@ -399,7 +400,7 @@ namespace Rengex {
         ExpectReplaceLine(patLine);
 
         bool isPrePattern = patLine.StartsWith("(?=)");
-        string pat = isPrePattern ? patLine.Substring(4) : patLine;
+        string pat = isPrePattern ? patLine[4..] : patLine;
         var rp = new ReplacePattern(pat, Line.Current);
         var rule = isPrePattern
           ? new PreprocessPattern(rp) as IReplacer
@@ -422,7 +423,7 @@ namespace Rengex {
       return new ReplaceConfig(path);
     }
 
-    public string GetDefaultConfig() => Properties.Resources.DefaultRepla;
+    public string GetDefaultConfig() => Properties.Resources.DefaultReplace;
 
     public string GetExtension() => ".repla.txt";
   }
