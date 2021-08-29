@@ -26,7 +26,7 @@ namespace Rengex {
       }
       for (int idx = 0, seq = 0; NamedGroup.Match(txt, idx, out Match m); idx = m.Index + 1) {
         string rep = m.Result($"(?<${{1}}{seq++}>$2)");
-        txt = txt.Remove(m.Index) + rep + txt[(m.Index + m.Length)..];
+        txt = $"{txt[..m.Index]}{rep}{txt[(m.Index + m.Length)..]}";
       }
       string jp = Regex.Replace(TextUtils.ClassJap, @"\\u(....)", @"\x{$1}");
       txt = txt.Replace("\\jp", jp);

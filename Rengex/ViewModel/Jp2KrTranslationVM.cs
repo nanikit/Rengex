@@ -1,14 +1,13 @@
-﻿using Nanikit.Ehnd;
-using Rengex.Translator;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Media;
-
-namespace Rengex {
+﻿namespace Rengex {
+  using Nanikit.Ehnd;
+  using Rengex.Translator;
+  using System;
+  using System.Collections.Generic;
+  using System.Collections.ObjectModel;
+  using System.Linq;
+  using System.Text.RegularExpressions;
+  using System.Threading.Tasks;
+  using System.Windows.Media;
 
   public class Jp2KrDesignVM : Jp2KrTranslationVM {
     public class TestLabelProgressVM : ILabelProgressVM {
@@ -32,18 +31,17 @@ namespace Rengex {
   }
 
   public class Jp2KrTranslationVM : ViewModelBase {
-
-    public readonly List<Exception> Exceptions = new List<Exception>();
     public ObservableCollection<ILabelProgressVM> Ongoings { get; private set; }
     public ObservableCollection<ILabelProgressVM> Faults { get; private set; }
+    public List<Exception> Exceptions { get; private set; } = new List<Exception>();
 
     public LabelProgressVM Progress { get; private set; }
 
     private readonly int workerCount;
     private readonly RegexDotConfiguration dotConfig;
-    private readonly List<TranslationUnit> translations;
-    private string workKind;
-    private readonly EhndTranslator selfTranslator;
+    private readonly List<TranslationUnit>? translations;
+    private string? workKind;
+    private EhndTranslator? _selfTranslator;
 
     /// <summary>
     /// if paths is null, search from metadata folder.
@@ -55,7 +53,6 @@ namespace Rengex {
       Progress = new LabelProgressVM();
       Faults = new ObservableCollection<ILabelProgressVM>();
       Ongoings = new ObservableCollection<ILabelProgressVM>();
-      selfTranslator = new EhndTranslator(Properties.Settings.Default.EzTransDir);
     }
 
     public Task ImportTranslation() {
@@ -65,10 +62,17 @@ namespace Rengex {
 
     public async Task MachineTranslation() {
       workKind = "번역: ";
-      using (var engine = new ForkTranslator(workerCount, selfTranslator)) {
-        Jp2KrWork genVm(TranslationUnit x) => new TranslateJp2Kr(x, engine);
-        await ParallelForEach(genVm).ConfigureAwait(false);
+      if (_selfTranslator == null) {
+        _selfTranslator = new EhndTranslator(Properties.Settings.Default.EzTransDir);
       }
+
+      using var engine = new ForkTranslator(workerCount, _selfTranslator);
+
+      Jp2KrWork genVm(TranslationUnit x) {
+        return new TranslateJp2Kr(x, engine);
+      }
+
+      await ParallelForEach(genVm).ConfigureAwait(false);
     }
 
     public Task ExportTranslation() {
@@ -78,10 +82,17 @@ namespace Rengex {
 
     public async Task OnestopTranslation() {
       workKind = "원터치: ";
-      using (var engine = new ForkTranslator(workerCount, selfTranslator)) {
-        Jp2KrWork genVm(TranslationUnit x) => new OnestopJp2Kr(x, engine);
-        await ParallelForEach(genVm).ConfigureAwait(false);
+      if (_selfTranslator == null) {
+        _selfTranslator = new EhndTranslator(Properties.Settings.Default.EzTransDir);
       }
+
+      using var engine = new ForkTranslator(workerCount, _selfTranslator);
+
+      Jp2KrWork genVm(TranslationUnit x) {
+        return new OnestopJp2Kr(x, engine);
+      }
+
+      await ParallelForEach(genVm).ConfigureAwait(false);
     }
 
     private IEnumerable<TranslationUnit> WalkForSources(string path) {
@@ -112,27 +123,20 @@ namespace Rengex {
         }
         catch (Exception e) {
           Progress.Foreground = LabelProgressVM.FgError;
-          string msg;
-          if (e is RegexMatchTimeoutException) {
-            msg = "정규식 검색이 너무 오래 걸립니다. 정규식을 점검해주세요.";
-          }
-          else {
-            msg = e.Message;
-          }
+          string msg = e is RegexMatchTimeoutException
+            ? "정규식 검색이 너무 오래 걸립니다. 정규식을 점검해주세요."
+            : e.Message;
           item.SetProgress(TranslationPhase.Error, 100, msg);
           Faults.Add(item.Progress);
           Exceptions.Add(e);
         }
         finally {
-          Ongoings.Remove(item.Progress);
+          _ = Ongoings.Remove(item.Progress);
           complete++;
           Progress.Value = (double)complete / transUnits.Count * 100;
           Progress.Label = $"{workKind}{complete} / {transUnits.Count}";
         }
       });
-    }
-
-    public void Cancel() {
     }
   }
 }
