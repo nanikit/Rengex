@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿namespace Rengex {
+  using System;
+  using System.Collections.Generic;
+  using System.IO;
+  using System.Text;
 
-namespace Rengex {
   /// <summary>
   /// State
   /// </summary>

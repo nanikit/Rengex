@@ -1,15 +1,14 @@
-﻿using Rengex.Translator;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
+﻿namespace Rengex {
+  using System;
+  using System.Collections.Generic;
+  using System.Globalization;
+  using System.IO;
+  using System.Linq;
+  using System.Threading;
+  using System.Threading.Tasks;
+  using System.Threading.Tasks.Dataflow;
 
-namespace Rengex {
-
-  interface IDotConfig<T> {
+  internal interface IDotConfig<T> {
     /// <summary>
     /// 빌더 메소드. 설정 파일 경로를 주면 설정을 제공.
     /// </summary>
@@ -26,11 +25,11 @@ namespace Rengex {
     Func<string, T> ConfigResolver { set; }
   }
 
-  interface IRegion {
+  internal interface IRegion {
     string Origin { get; }
   }
 
-  class FileTimeoutWatcher : IDisposable {
+  internal class FileTimeoutWatcher : IDisposable {
 
     public event FileSystemEventHandler Commited = delegate { };
 
@@ -44,10 +43,10 @@ namespace Rengex {
       MsTimeout = msTimeout;
     }
 
-    public FileTimeoutWatcher(int msTimeout, params FileSystemWatcher[] fsws) : this(msTimeout) {
+    public FileTimeoutWatcher(int msTimeout, params FileSystemWatcher[] watchers) : this(msTimeout) {
       TimeoutFilter = DispatchDeduplicatedEvents();
-      foreach (FileSystemWatcher fsw in fsws) {
-        Subscribe(fsw);
+      foreach (FileSystemWatcher watcher in watchers) {
+        Subscribe(watcher);
       }
     }
 
@@ -105,7 +104,7 @@ namespace Rengex {
   /// 경로에 따라 실제 적용되는 설정을 반환.
   /// </summary>
   /// <typeparam name="T">설정 클래스</typeparam>
-  class DotConfigurator<T> : IDisposable where T : IDotConfig<T>, new() {
+  internal class DotConfigurator<T> : IDisposable where T : IDotConfig<T>, new() {
 
     public event Action<FileSystemEventArgs> ConfigReloaded = delegate { };
     public event Action<FileSystemEventArgs, Exception> Faulted = delegate { };
@@ -208,8 +207,11 @@ namespace Rengex {
     }
 
     public T GetConfiguration(string path) {
-      string absolute = Path.GetFullPath(path).ToLower();
-      return Regions.First(x => absolute.EndsWith(x.Suffix) && absolute.StartsWith(x.Prefix)).Value;
+      string absolute = Path.GetFullPath(path).ToLower(CultureInfo.InvariantCulture);
+      return Regions.First(x =>
+        absolute.EndsWith(x.Suffix, StringComparison.InvariantCultureIgnoreCase) &&
+        absolute.StartsWith(x.Prefix, StringComparison.InvariantCultureIgnoreCase)
+      ).Value;
     }
 
     private void FileChanged(object sender, FileSystemEventArgs fse) {
@@ -225,27 +227,27 @@ namespace Rengex {
       }
     }
 
-    private void ReflectDelta(FileSystemEventArgs fse) {
-      switch (fse.ChangeType) {
+    private void ReflectDelta(FileSystemEventArgs eventArgs) {
+      switch (eventArgs.ChangeType) {
         case WatcherChangeTypes.Changed:
-          if (RegionDict.TryGetValue(fse.FullPath.ToLower(), out Region region)) {
-            region.Value = ConfigBuilder.CreateFromFile(fse.FullPath);
+          if (RegionDict.TryGetValue(eventArgs.FullPath.ToLower(), out Region region)) {
+            region.Value = ConfigBuilder.CreateFromFile(eventArgs.FullPath);
           }
           else {
-            AddRegion(fse.FullPath);
+            AddRegion(eventArgs.FullPath);
           }
           break;
         case WatcherChangeTypes.Deleted:
-          RemoveRegion(fse.FullPath);
+          RemoveRegion(eventArgs.FullPath);
           break;
         case WatcherChangeTypes.Created:
-          AddRegion(fse.FullPath);
+          AddRegion(eventArgs.FullPath);
           break;
         case WatcherChangeTypes.Renamed:
-          var ren = fse as RenamedEventArgs;
-          RemoveRegion(ren.OldFullPath);
-          if (ren.FullPath.EndsWith(ConfigBuilder.GetExtension())) {
-            AddRegion(ren.FullPath);
+          var renameArgs = eventArgs as RenamedEventArgs;
+          RemoveRegion(renameArgs.OldFullPath);
+          if (renameArgs.FullPath.EndsWith(ConfigBuilder.GetExtension())) {
+            AddRegion(renameArgs.FullPath);
           }
           break;
       }

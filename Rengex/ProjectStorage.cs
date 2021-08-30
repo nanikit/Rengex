@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿namespace Rengex {
+  using System;
+  using System.Collections.Generic;
+  using System.IO;
+  using System.Linq;
+  using System.Text.RegularExpressions;
 
-namespace Rengex {
   public interface IProjectStorage {
     /// <summary>
     /// 상대 경로.
@@ -28,7 +28,7 @@ namespace Rengex {
     string DestinationPath { get; }
   }
 
-  class CwdDesignator : IProjectStorage {
+  internal class CwdDesignator : IProjectStorage {
 
     // TODO: Remove separator suffix
     public const string ProjectDirectory = "rengex";
@@ -39,7 +39,7 @@ namespace Rengex {
     private static readonly Regex RxTransExt = new Regex(@"(.*)\.tran(?:[_-]번역)?\.txt$");
 
     static CwdDesignator() {
-      Directory.CreateDirectory(ProjectDirectory);
+      _ = Directory.CreateDirectory(ProjectDirectory);
     }
 
     public static IEnumerable<CwdDesignator> FindTranslations() {
@@ -68,21 +68,13 @@ namespace Rengex {
     /// <summary>
     /// 프로젝트 폴더 안에 복사한 원본 파일 경로.
     /// </summary>
-    public string SourcePath {
-      get => $"{SourceDirectory}\\{RelativePath}";
-    }
+    public string SourcePath => $"{SourceDirectory}\\{RelativePath}";
 
-    public string MetadataPath {
-      get => $"{MetadataDirectory}\\{RelativePath}.meta.txt";
-    }
+    public string MetadataPath => $"{MetadataDirectory}\\{RelativePath}.meta.txt";
 
-    public string TranslationPath {
-      get => $"{TranslationDirectory}\\{RelativePath}.tran.txt";
-    }
+    public string TranslationPath => $"{TranslationDirectory}\\{RelativePath}.tran.txt";
 
-    public string DestinationPath {
-      get => $"{DestinationDirectory}\\{RelativePath}";
-    }
+    public string DestinationPath => $"{DestinationDirectory}\\{RelativePath}";
 
     #endregion
 
@@ -94,7 +86,7 @@ namespace Rengex {
     }
 
     private static bool StartsWithAbsoluteOf(string includer, string includee) {
-      return includer.StartsWith(Path.GetFullPath(includee));
+      return includer.StartsWith(Path.GetFullPath(includee), StringComparison.InvariantCultureIgnoreCase);
     }
 
     private static string? GetRelativePathFromQueuePath(string absolute) {
@@ -102,7 +94,7 @@ namespace Rengex {
         return GetRelativePathTo(SourceDirectory, absolute);
       }
       if (StartsWithAbsoluteOf(absolute, MetadataDirectory) &&
-        absolute.EndsWith(".meta.txt")) {
+        absolute.EndsWith(".meta.txt", StringComparison.Ordinal)) {
         string rel = GetRelativePathTo(MetadataDirectory, absolute);
         return rel[0..^9];
       }
@@ -113,18 +105,16 @@ namespace Rengex {
           return m.Result("$1");
         }
       }
-      if (StartsWithAbsoluteOf(absolute, DestinationDirectory)) {
-        return GetRelativePathTo(DestinationDirectory, absolute);
-      }
-      return null;
+      return StartsWithAbsoluteOf(absolute, DestinationDirectory)
+        ? GetRelativePathTo(DestinationDirectory, absolute)
+        : null;
     }
 
     private static string GetRelativePath(string root, string absolute) {
       string relative = GetRelativePathTo($"{root}\\", absolute);
-      if (relative.Contains("..\\")) {
-        throw new Exception("path cannot be upper than root");
-      }
-      return relative;
+      return relative.Contains("..\\")
+        ? throw new Exception("path cannot be upper than root")
+        : relative;
     }
 
     /// <summary>
@@ -145,7 +135,7 @@ namespace Rengex {
       var units = new List<CwdDesignator>();
       if (Directory.Exists(path)) {
         string parent = Path.GetDirectoryName(path)!;
-        var files = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories);
+        IEnumerable<string>? files = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories);
         foreach (string file in files) {
           if (!IsConfigFile(file)) {
             units.Add(new CwdDesignator(parent, file));
@@ -160,14 +150,15 @@ namespace Rengex {
     }
 
     private static bool IsConfigFile(string file) {
-      return file.EndsWith(".match.txt") || file.EndsWith(".repla.txt");
+      return file.EndsWith(MatchConfig.Extension, StringComparison.Ordinal)
+        || file.EndsWith(ReplaceConfig.Extension, StringComparison.Ordinal);
     }
 
     private void CopyToSourceDirectory(string path) {
       if (File.Exists(SourcePath)) {
         return;
       }
-      Util.PrecreateDirectory(SourcePath);
+      _ = Util.PrecreateDirectory(SourcePath);
       File.Copy(path, SourcePath, true);
     }
   }

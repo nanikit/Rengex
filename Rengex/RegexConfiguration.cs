@@ -166,9 +166,10 @@ namespace Rengex {
   }
 
   class MatchConfig : IDotConfig<MatchConfig> {
+    public static readonly string Extension = ".match.txt";
 
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
-    readonly ExtendedMatcher Matcher;
+    private readonly ExtendedMatcher Matcher;
 
     public Func<string, MatchConfig> ConfigResolver { set { } }
 
@@ -191,7 +192,7 @@ namespace Rengex {
 
     public string GetDefaultConfig() => Properties.Resources.DefaultMatch;
 
-    public string GetExtension() => ".match.txt";
+    public string GetExtension() => Extension;
 
     private static string GetPattern(string path) {
       return File.ReadAllText(path).Replace(@"\jp", TextUtils.ClassJap);
@@ -202,6 +203,7 @@ namespace Rengex {
   /// 번역 전, 후 치환 규칙 설정을 담당하는 클래스
   /// </summary>
   public class ReplaceConfig : IDotConfig<ReplaceConfig> {
+    public static readonly string Extension = ".repla.txt";
 
     interface IReplacer {
       string Preprocess(string meta, string trans);
@@ -244,7 +246,7 @@ namespace Rengex {
       }
     }
 
-    class PostprocessPattern : IReplacer {
+    private class PostprocessPattern : IReplacer {
       readonly ReplacePattern Pat;
 
       public PostprocessPattern(ReplacePattern pat) {
@@ -262,7 +264,7 @@ namespace Rengex {
       }
     }
 
-    class Import : IReplacer {
+    private class Import : IReplacer {
       public ReplaceConfig Includer;
 
       public string FullPath;
@@ -350,7 +352,7 @@ namespace Rengex {
       public readonly ReplaceConfig ReplaceConfig;
       public readonly List<IReplacer> Rules;
 
-      IEnumerator<string> Line;
+      private IEnumerator<string> Lines;
 
       public ReplaceConfigLoader(ReplaceConfig config) {
         ReplaceConfig = config;
@@ -359,11 +361,11 @@ namespace Rengex {
 
       private List<IReplacer> LoadConfig() {
         string[] lines = File.ReadAllLines(ReplaceConfig.FullPath);
-        Line = lines.AsEnumerable().GetEnumerator();
+        Lines = lines.AsEnumerable().GetEnumerator();
 
         var rules = new List<IReplacer>();
-        while (Line.MoveNext()) {
-          if (IsCommentLine(Line.Current)) {
+        while (Lines.MoveNext()) {
+          if (IsCommentLine(Lines.Current)) {
             continue;
           }
           Import? import = ReadImportLine();
@@ -383,34 +385,33 @@ namespace Rengex {
       }
 
       private Import? ReadImportLine() {
-        string line = Line.Current;
+        string line = Lines.Current;
         if (line[0] != '*') {
           return null;
         }
 
         var import = new Import(ReplaceConfig, line[1..]);
-        if (!File.Exists(import.FullPath)) {
-          throw new ApplicationException($"참조 파일이 존재하지 않습니다: {import.FullPath}");
-        }
-        return import;
+        return !File.Exists(import.FullPath)
+          ? throw new ApplicationException($"참조 파일이 존재하지 않습니다: {import.FullPath}")
+          : import;
       }
 
       private IReplacer ReadPatternLines() {
-        string patLine = Line.Current;
+        string patLine = Lines.Current;
         ExpectReplaceLine(patLine);
 
-        bool isPrePattern = patLine.StartsWith("(?=)");
+        bool isPrePattern = patLine.StartsWith("(?=)", StringComparison.Ordinal);
         string pat = isPrePattern ? patLine[4..] : patLine;
-        var rp = new ReplacePattern(pat, Line.Current);
-        var rule = isPrePattern
+        var rp = new ReplacePattern(pat, Lines.Current);
+        IReplacer? rule = isPrePattern
           ? new PreprocessPattern(rp) as IReplacer
           : new PostprocessPattern(rp);
         return rule;
       }
 
       private void ExpectReplaceLine(string patLine) {
-        while (Line.MoveNext()) {
-          if (!IsCommentLine(Line.Current)) {
+        while (Lines.MoveNext()) {
+          if (!IsCommentLine(Lines.Current)) {
             return;
           }
         }
@@ -423,8 +424,12 @@ namespace Rengex {
       return new ReplaceConfig(path);
     }
 
-    public string GetDefaultConfig() => Properties.Resources.DefaultReplace;
+    public string GetDefaultConfig() {
+      return Properties.Resources.DefaultReplace;
+    }
 
-    public string GetExtension() => ".repla.txt";
+    public string GetExtension() {
+      return Extension;
+    }
   }
 }
