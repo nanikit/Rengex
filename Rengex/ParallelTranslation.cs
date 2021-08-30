@@ -1,10 +1,9 @@
-﻿using Rengex.Translator;
-using System;
-using System.Threading.Tasks;
-using System.Windows.Media;
-using static Rengex.Translator.SplitTranslator;
-
-namespace Rengex {
+﻿namespace Rengex {
+  using Rengex.Translator;
+  using System;
+  using System.Threading.Tasks;
+  using System.Windows.Media;
+  using static Rengex.Translator.SplitTranslator;
 
   public interface ILabelProgressVM {
     string Label { get; }
@@ -108,10 +107,9 @@ namespace Rengex {
   class ImportJp2Kr : Jp2KrWork {
     public ImportJp2Kr(TranslationUnit tu) : base(tu) { }
 
-    public override Task Process() {
-      translation.ExtractSourceText();
+    public override async Task Process() {
+      await translation.ExtractSourceText().ConfigureAwait(false);
       SetProgress(TranslationPhase.Complete, 100);
-      return Task.CompletedTask;
     }
   }
 
@@ -167,7 +165,7 @@ namespace Rengex {
 
     public async override Task Process() {
       SetProgress(TranslationPhase.Import, 0);
-      translation.ExtractSourceText();
+      await translation.ExtractSourceText();
 
       SetProgress(TranslationPhase.Translation, 10);
       using (var splitter = new SplitTranslator(translator, this)) {

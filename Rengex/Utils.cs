@@ -1,17 +1,20 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using System.Windows.Input;
+﻿namespace Rengex {
+  using System;
+  using System.Collections.Concurrent;
+  using System.Collections.Generic;
+  using System.ComponentModel;
+  using System.IO;
+  using System.Linq;
+  using System.Runtime.CompilerServices;
+  using System.Threading.Tasks;
+  using System.Windows.Input;
 
-namespace Rengex {
   public static class Util {
     public static string PrecreateDirectory(string path) {
-      Directory.CreateDirectory(Path.GetDirectoryName(path));
+      string? directory = Path.GetDirectoryName(path);
+      if (directory != null) {
+        Directory.CreateDirectory(directory);
+      }
       return path;
     }
 
@@ -20,6 +23,12 @@ namespace Rengex {
         ? $"...{path.Substring(path.Length - len)}"
         : path;
       return ellipsisPath;
+    }
+
+    public static async Task CopyFileAsync(string sourcePath, string destinationPath) {
+      using Stream source = File.Open(sourcePath, FileMode.Open);
+      using Stream destination = File.Create(destinationPath);
+      await source.CopyToAsync(destination).ConfigureAwait(false);
     }
 
     public static Task ForEachAsync<T>(this IEnumerable<T> source, int dop, Func<T, Task> body) {

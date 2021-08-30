@@ -6,31 +6,29 @@
   using System.Text;
   using System.Threading.Tasks;
 
-  internal interface IJpToKrable {
-    void ExtractSourceText();
-    Task MachineTranslate(ITranslator translator);
-    void BuildTranslation();
-  }
+  public class TranslationUnit {
 
-  public class TranslationUnit : IJpToKrable {
-
-    public IProjectStorage Workspace { get; set; }
+    public ManagedPath Workspace { get; set; }
     public RegexDotConfiguration DotConfig { get; set; }
 
     private static readonly UTF8Encoding _utf8WithBom = new UTF8Encoding(true);
     private static readonly Encoding _cp949 = Encoding.GetEncoding(949);
     private RegexConfiguration? _config;
 
-    public TranslationUnit(RegexDotConfiguration dot, IProjectStorage workspace) {
+    public TranslationUnit(RegexDotConfiguration dot, ManagedPath workspace) {
       DotConfig = dot;
       Workspace = workspace;
     }
 
-    public void ExtractSourceText() {
+    public async Task ExtractSourceText() {
+      if (!Workspace.IsInProject) {
+        await Workspace.CopyToSourceDirectory().ConfigureAwait(false);
+      }
       if (!StringWithCodePage.ReadAllTextAutoDetect(Workspace.SourcePath, out StringWithCodePage sourceText)) {
         // TODO: UI message
         return;
       }
+
       string txt = sourceText.Content;
       _config = DotConfig.GetConfiguration(Workspace.SourcePath);
       WriteIntermediates(_config.Matches(txt));
@@ -38,7 +36,7 @@
 
     public async Task MachineTranslate(ITranslator translator) {
       if (!File.Exists(Workspace.TranslationPath)) {
-        ExtractSourceText();
+        await ExtractSourceText().ConfigureAwait(false);
       }
       if (!File.Exists(Workspace.TranslationPath)) {
         return;

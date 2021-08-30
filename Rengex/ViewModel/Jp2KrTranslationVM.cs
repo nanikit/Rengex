@@ -96,13 +96,13 @@
     }
 
     private IEnumerable<TranslationUnit> WalkForSources(string path) {
-      return CwdDesignator
+      return ManagedPath
         .WalkForSources(path)
         .Select(x => new TranslationUnit(dotConfig, x));
     }
 
     private IEnumerable<TranslationUnit> FindTranslations() {
-      return WalkForSources(CwdDesignator.MetadataDirectory);
+      return WalkForSources(ManagedPath.MetadataDirectory);
     }
 
     private Task ParallelForEach(Func<TranslationUnit, Jp2KrWork> genViewModel) {

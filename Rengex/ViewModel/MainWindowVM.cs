@@ -183,7 +183,9 @@
       if (dotConfig != null) {
         return dotConfig;
       }
-      string cwd = CwdDesignator.ProjectDirectory;
+
+      string cwd = ManagedPath.ProjectDirectory;
+      _ = Directory.CreateDirectory(cwd);
       dotConfig = new RegexDotConfiguration(cwd, ConfigReloaded, ConfigFaulted);
       return dotConfig;
     }

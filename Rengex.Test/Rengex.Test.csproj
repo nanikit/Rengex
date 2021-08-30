@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Rengex.Translator\Rengex.Translator.csproj" />
+    <ProjectReference Include="..\Rengex\Rengex.csproj" />
   </ItemGroup>
 
 </Project>
