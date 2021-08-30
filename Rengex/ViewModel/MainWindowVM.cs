@@ -49,7 +49,8 @@
     private Operation defaultButton;
     private Jp2KrTranslationVM? translator;
 
-    public MainWindowVM() {
+    public MainWindowVM(Action<object>? logAdded = null) {
+      LogAdded += logAdded;
       DefaultOperation = Operation.Onestop;
       OperateCommand = new RelayCommand<Operation>(RunOperation);
       PinCommand = new RelayCommand<Operation>(PinAction);

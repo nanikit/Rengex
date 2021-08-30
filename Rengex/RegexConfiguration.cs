@@ -415,8 +415,7 @@ namespace Rengex {
             return;
           }
         }
-        string fileName = Path.GetFileName(ReplaceConfig.FullPath);
-        throw new ApplicationException($"치환할 문자열이 없습니다: {fileName}\n{patLine}");
+        throw new ApplicationException($"다음 패턴을 치환할 문자열이 없습니다: {patLine}");
       }
     }
 

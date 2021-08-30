@@ -183,12 +183,12 @@
         try {
           AddRegion(config);
         }
-        catch (Exception e) {
-          var type = WatcherChangeTypes.Created;
+        catch (Exception exception) {
+          WatcherChangeTypes type = WatcherChangeTypes.Created;
           string dir = Path.GetDirectoryName(config);
           string name = Path.GetFileName(config);
-          var fse = new FileSystemEventArgs(type, dir, name);
-          Faulted.Invoke(fse, e);
+          var eventArgs = new FileSystemEventArgs(type, dir, name);
+          Faulted.Invoke(eventArgs, exception);
           return;
         }
       }
@@ -295,11 +295,7 @@
     private readonly DotConfigurator<MatchConfig> Matcher;
     private readonly DotConfigurator<ReplaceConfig> Replacer;
 
-    public IEnumerable<string> RegionPaths {
-      get {
-        return Matcher.RegionPaths.Concat(Replacer.RegionPaths);
-      }
-    }
+    public IEnumerable<string> RegionPaths => Matcher.RegionPaths.Concat(Replacer.RegionPaths);
 
     public RegexDotConfiguration(
       string projectDir,
@@ -313,18 +309,18 @@
       Replacer = new DotConfigurator<ReplaceConfig>(projectDir, Reloaded, Faulted);
     }
 
+    public RegexConfiguration GetConfiguration(string path) {
+      MatchConfig matcher = Matcher.GetConfiguration(path);
+      ReplaceConfig replacer = Replacer.GetConfiguration(path);
+      return new RegexConfiguration(matcher, replacer);
+    }
+
     private void Reloaded(FileSystemEventArgs obj) {
       ConfigReloaded.Invoke(obj);
     }
 
     private void Faulted(FileSystemEventArgs fse, Exception e) {
       ConfigFaulted.Invoke(fse, e);
-    }
-
-    public RegexConfiguration GetConfiguration(string path) {
-      MatchConfig matcher = Matcher.GetConfiguration(path);
-      ReplaceConfig replacer = Replacer.GetConfiguration(path);
-      return new RegexConfiguration(matcher, replacer);
     }
   }
 }

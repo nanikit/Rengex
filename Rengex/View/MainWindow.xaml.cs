@@ -1,11 +1,11 @@
-﻿using System;
-using System.Linq;
-using System.Text;
-using System.Windows;
-using System.Windows.Documents;
-using System.Windows.Input;
+﻿namespace Rengex.View {
+  using System;
+  using System.Linq;
+  using System.Text;
+  using System.Windows;
+  using System.Windows.Documents;
+  using System.Windows.Input;
 
-namespace Rengex.View {
   /// <summary>
   /// Interaction logic for MainWindow.xaml
   /// </summary>
@@ -14,14 +14,14 @@ namespace Rengex.View {
     private readonly MainWindowVM vm;
 
     public MainWindow() {
-      vm = new MainWindowVM();
-      vm.LogAdded += LogAdded;
-      DataContext = vm;
-      InitializeComponent();
-
       string build = Properties.Resources.BuildDate;
       string date = $"{build.Substring(2, 2)}{build.Substring(5, 2)}{build.Substring(8, 2)}";
       AppendText($"Rengex v{date} by nanikit\n");
+
+      vm = new MainWindowVM(logAdded: LogAdded);
+      DataContext = vm;
+
+      InitializeComponent();
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e) {
@@ -34,7 +34,7 @@ namespace Rengex.View {
       }
     }
 
-    private DebugWindow DebugWindow =>
+    private static DebugWindow? DebugWindow =>
       Application.Current.Windows.OfType<DebugWindow>().FirstOrDefault();
 
     private void OnFlaskClick(object sender, RoutedEventArgs e) {
@@ -42,12 +42,12 @@ namespace Rengex.View {
     }
 
     private void ShowRegexDebugWindow() {
-      Window dw = DebugWindow;
-      if (dw == null) {
+      Window? window = DebugWindow;
+      if (window == null) {
         new DebugWindow(vm.dotConfig).Show();
       }
       else {
-        dw.Activate();
+        _ = window.Activate();
       }
     }
 
@@ -55,7 +55,7 @@ namespace Rengex.View {
       if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
         return;
       }
-      var paths = (string[])e.Data.GetData(DataFormats.FileDrop);
+      string[]? paths = e.Data.GetData(DataFormats.FileDrop) as string[];
       vm.RunDefaultOperation(paths);
     }
 
@@ -73,13 +73,13 @@ namespace Rengex.View {
         if (context == TextPointerContext.Text) {
           string blockText = navigator.GetTextInRun(forward);
           int croppedLen = Math.Min(offsetToEnd, navigator.GetTextRunLength(forward));
-          buffer.Append(blockText, 0, croppedLen);
+          _ = buffer.Append(blockText, 0, croppedLen);
         }
         else if (
           context == TextPointerContext.ElementEnd &&
           navigator.Parent is Paragraph
         ) {
-          buffer.AppendLine();
+          _ = buffer.AppendLine();
         }
         else if (
           navigator.Parent is BlockUIContainer block &&
@@ -87,8 +87,8 @@ namespace Rengex.View {
           progress.DataContext is Jp2KrTranslationVM work
         ) {
           foreach (Exception e in work.Exceptions) {
-            buffer.AppendLine(e.ToString());
-            buffer.AppendLine();
+            _ = buffer.AppendLine(e.ToString());
+            _ = buffer.AppendLine();
           }
         }
         navigator = navigator.GetNextContextPosition(forward);
@@ -100,34 +100,42 @@ namespace Rengex.View {
       ea.Handled = true;
     }
 
-    private void Post(Action action) => Dispatcher.BeginInvoke(action);
+    private void Post(Action action) {
+      _ = Dispatcher.BeginInvoke(action);
+    }
 
-    private void WithAutoScroll(Action action) => Post(() => {
-      double bottom = TbLog.VerticalOffset + TbLog.ViewportHeight;
-      bool isBottommost = bottom >= TbLog.ExtentHeight - 10;
-      action();
-      if (isBottommost) {
-        TbLog.ScrollToEnd();
-      }
-    });
+    private void WithAutoScroll(Action action) {
+      Post(() => {
+        double bottom = TbLog.VerticalOffset + TbLog.ViewportHeight;
+        bool isBottommost = bottom >= TbLog.ExtentHeight - 10;
+        action();
+        if (isBottommost) {
+          TbLog.ScrollToEnd();
+        }
+      });
+    }
 
     private void LogAdded(object obj) {
       switch (obj) {
-      case string s:
-        AppendText(s);
-        break;
-      case Exception e:
-        AppendException(e);
-        break;
-      case Jp2KrTranslationVM tvm:
-        AppendProgress(tvm);
-        break;
+        case string s:
+          AppendText(s);
+          break;
+        case Exception e:
+          AppendException(e);
+          break;
+        case Jp2KrTranslationVM tvm:
+          AppendProgress(tvm);
+          break;
+        default:
+          throw new Exception("unexpected argument");
       }
     }
 
-    private void AppendText(string res) => WithAutoScroll(() => {
-      TbLog.AppendText(res);
-    });
+    private void AppendText(string res) {
+      WithAutoScroll(() => {
+        TbLog.AppendText(res);
+      });
+    }
 
     private void AppendProgress(Jp2KrTranslationVM tvm) {
       var control = new WorkProgress(tvm);
