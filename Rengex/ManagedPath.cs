@@ -9,10 +9,15 @@
   public class ManagedPath {
 
     public const string ProjectDirectory = "rengex";
-    public static readonly string SourceDirectory = Path.Combine(ProjectDirectory, "1_source");
-    public static readonly string MetadataDirectory = Path.Combine(ProjectDirectory, "2_meta");
-    public static readonly string TranslationDirectory = Path.Combine(ProjectDirectory, "3_translation");
-    public static readonly string DestinationDirectory = Path.Combine(ProjectDirectory, "4_result");
+    public static readonly string SourceDirectory = Path.Combine(ProjectDirectory, SourceName);
+    public static readonly string MetadataDirectory = Path.Combine(ProjectDirectory, MetadataName);
+    public static readonly string TranslationDirectory = Path.Combine(ProjectDirectory, TranslationName);
+    public static readonly string DestinationDirectory = Path.Combine(ProjectDirectory, DestinationName);
+
+    private const string SourceName = "1_source";
+    private const string MetadataName = "2_meta";
+    private const string TranslationName = "3_translation";
+    private const string DestinationName = "4_result";
 
     #region Fields and properties (mainly for path)
 
@@ -69,7 +74,7 @@
         string relative = Path.GetRelativePath(ProjectPath, OriginalPath);
         char separator = Path.DirectorySeparatorChar;
         relative = string.Join(separator, relative.Split(separator).Skip(1));
-        relative = Regex.Replace(relative, @"\.(meta|tran(_번역)?)\.txt$", "");
+        relative = Regex.Replace(relative, $"(?:{MetadataName}\\\\.*?\\.meta|{TranslationName}\\\\.*?\\.tran(?:_번역)?)\\.txt$", "");
         RelativePath = relative == "" ? "." : relative;
       }
       else if (root != null) {
