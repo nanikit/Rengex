@@ -5,6 +5,7 @@
   using System.Collections.Generic;
   using System.Collections.ObjectModel;
   using System.Linq;
+  using System.Management;
   using System.Text.RegularExpressions;
   using System.Threading.Tasks;
   using System.Windows.Media;
@@ -31,24 +32,29 @@
   }
 
   public class Jp2KrTranslationVM : ViewModelBase {
+    private static readonly int coreCount;
+
     public ObservableCollection<ILabelProgressVM> Ongoings { get; private set; }
     public ObservableCollection<ILabelProgressVM> Faults { get; private set; }
     public List<Exception> Exceptions { get; private set; } = new List<Exception>();
 
     public LabelProgressVM Progress { get; private set; }
 
-    private readonly int workerCount;
     private readonly RegexDotConfiguration dotConfig;
     private readonly List<TranslationUnit>? translations;
     private string? workKind;
     private EhndTranslator? _selfTranslator;
+
+    static Jp2KrTranslationVM() {
+      coreCount = GetCoreCount();
+    }
+
 
     /// <summary>
     /// if paths is null, search from metadata folder.
     /// </summary>
     public Jp2KrTranslationVM(RegexDotConfiguration dot, string[]? paths = null) {
       dotConfig = dot;
-      workerCount = Environment.ProcessorCount;
       translations = paths?.SelectMany(p => WalkForSources(p))?.ToList();
       Progress = new LabelProgressVM();
       Faults = new ObservableCollection<ILabelProgressVM>();
@@ -66,7 +72,7 @@
         _selfTranslator = new EhndTranslator(Properties.Settings.Default.EzTransDir);
       }
 
-      using var engine = new ForkTranslator(workerCount, _selfTranslator);
+      using var engine = new ForkTranslator(coreCount, _selfTranslator);
 
       Jp2KrWork genVm(TranslationUnit x) {
         return new TranslateJp2Kr(x, engine);
@@ -86,13 +92,24 @@
         _selfTranslator = new EhndTranslator(Properties.Settings.Default.EzTransDir);
       }
 
-      using var engine = new ForkTranslator(workerCount, _selfTranslator);
+      using var engine = new ForkTranslator(coreCount, _selfTranslator);
 
       Jp2KrWork genVm(TranslationUnit x) {
         return new OnestopJp2Kr(x, engine);
       }
 
       await ParallelForEach(genVm).ConfigureAwait(false);
+    }
+
+    private static int GetCoreCount() {
+      int coreCount = 0;
+      foreach (var item in new ManagementObjectSearcher("Select * from Win32_Processor").Get()) {
+        string row = $"{item["NumberOfCores"]}";
+        if (int.TryParse(row, out int count)) {
+          coreCount += count;
+        }
+      }
+      return coreCount;
     }
 
     private IEnumerable<TranslationUnit> WalkForSources(string path) {
@@ -111,7 +128,7 @@
       Progress.Value = 0;
       Progress.Label = $"{workKind}{complete} / {transUnits.Count}";
 
-      return transUnits.ForEachPinnedAsync(workerCount, async t => {
+      return transUnits.ForEachPinnedAsync(coreCount, async t => {
         Jp2KrWork item = genViewModel(t);
         Ongoings.Add(item.Progress);
         try {
