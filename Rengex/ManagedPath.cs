@@ -54,7 +54,7 @@
     public bool IsInProject {
       get {
         string projectPath = $"{ProjectPath}{Path.DirectorySeparatorChar}";
-        return OriginalPath?.StartsWith(projectPath, StringComparison.InvariantCultureIgnoreCase) ?? true;
+        return OriginalPath?.StartsWith(projectPath, StringComparison.OrdinalIgnoreCase) ?? true;
       }
     }
 
@@ -72,9 +72,9 @@
 
       if (IsInProject) {
         string relative = Path.GetRelativePath(ProjectPath, OriginalPath);
-        char separator = Path.DirectorySeparatorChar;
-        relative = string.Join(separator, relative.Split(separator).Skip(1));
-        relative = Regex.Replace(relative, $"(?:{MetadataName}\\\\.*?\\.meta|{TranslationName}\\\\.*?\\.tran(?:_번역)?)\\.txt$", "");
+        relative = Regex.Replace(relative, $"^{MetadataName}\\\\(.*?)\\.meta\\.txt$", "$1");
+        relative = Regex.Replace(relative, $"^{TranslationName}\\\\(.*?)\\.tran(?:_번역)?\\.txt$", "$1");
+        relative = Regex.Replace(relative, $"^({SourceName}|{DestinationName})\\\\", "");
         RelativePath = relative == "" ? "." : relative;
       }
       else if (root != null) {
