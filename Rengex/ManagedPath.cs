@@ -2,7 +2,6 @@
   using System;
   using System.Collections.Generic;
   using System.IO;
-  using System.Linq;
   using System.Text.RegularExpressions;
   using System.Threading.Tasks;
 
@@ -91,16 +90,17 @@
 
     public static List<ManagedPath> WalkForSources(string path) {
       var units = new List<ManagedPath>();
+      string parent = Path.GetDirectoryName(path)!;
       if (Directory.Exists(path)) {
         IEnumerable<string>? files = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories);
         foreach (string file in files) {
           if (!IsConfigFile(file)) {
-            units.Add(new ManagedPath(file, path));
+            units.Add(new ManagedPath(file, parent));
           }
         }
       }
       else if (File.Exists(path)) {
-        units.Add(new ManagedPath(path, Path.GetDirectoryName(path)));
+        units.Add(new ManagedPath(path, parent));
       }
       return units;
     }
