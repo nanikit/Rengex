@@ -9,7 +9,7 @@
 기계 번역 엔진으로 [Ehnd](https://github.com/sokcuri/ehnd)를 사용헙니다.
 사용 전에 [Ehnd를 설치](https://blog.naver.com/PostView.nhn?blogId=sokcuri&logNo=220301117949)해주세요.
 
-베타 버전을 사용한다면 [.NET 5](https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-5.0.9-windows-x64-installer)를 추가로 설치해주세요.
+베타 버전을 사용한다면 [32비트 .NET 5](https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-5.0.10-windows-x64-installer)를 추가로 설치해주세요.
 
 ## 텍스트 파일 번역법
 
