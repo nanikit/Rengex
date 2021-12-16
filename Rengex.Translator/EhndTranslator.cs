@@ -5,15 +5,14 @@ using System.Threading.Tasks;
 
 namespace Rengex.Translator {
   public sealed class EhndTranslator : ITranslator {
-    private static Ehnd? Instance;
-    private static Task<string> _task = Task.FromResult("");
+    private static IEhnd? Instance;
 
     public EhndTranslator(string? eztransDirectory) {
       if (Instance != null) {
         return;
       }
       var path = eztransDirectory != null ? Path.Combine(eztransDirectory, Ehnd.DllName) : null;
-      Instance = new Ehnd(path);
+      Instance = new BatchEhnd(new Ehnd(path));
     }
 
     public Task<string> Translate(string source) {
@@ -21,16 +20,10 @@ namespace Rengex.Translator {
         throw new Exception("Assertion failed. Instance is null.");
       }
 
-      var previousTask = _task;
-      _task = Task.Run(async () => {
-        _ = await previousTask.ConfigureAwait(false);
-        return Instance.Translate(source);
-      });
-      return _task;
+      return Task.Run(() => Instance.TranslateAsync(source));
     }
 
     public void Dispose() {
-      GC.SuppressFinalize(this);
     }
   }
 }
