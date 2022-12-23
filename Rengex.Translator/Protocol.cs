@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,7 +24,7 @@ namespace Rengex.Translator {
     static MemoryStream GetPrefixedSerialStream(object o) {
       var ms = new MemoryStream();
       ms.Write(BitConverter.GetBytes(0L), 0, sizeof(long));
-      Formatter.Serialize(ms, o);
+      JsonSerializer.Serialize(ms, o);
       ms.Seek(0, SeekOrigin.Begin);
       ms.Write(BitConverter.GetBytes(ms.Length - sizeof(long)), 0, sizeof(long));
       ms.Seek(0, SeekOrigin.Begin);
@@ -37,30 +38,24 @@ namespace Rengex.Translator {
       return buf;
     }
 
-    public static async Task<T> ReadObjAsync<T>(this Stream s, Action<double>? progress = null) {
+    public static async Task<T> ReadObjAsync<T>(this Stream s) {
       byte[] lenHeader = await s.ReadLenAsync(sizeof(long));
 
       int len = (int)BitConverter.ToInt64(lenHeader, 0);
-      byte[] buf = await s.ReadLenAsync(len, progress);
+      byte[] buf = await s.ReadLenAsync(len);
 
       using var ms = new MemoryStream(buf);
-      return (T)Formatter.Deserialize(ms);
+      return JsonSerializer.Deserialize<T>(ms)!;
     }
 
     // CancellationToken does nothing for NetworkStream.ReadAsync
-    public static async Task<byte[]> ReadLenAsync(this Stream s, int len, Action<double>? progress = null) {
-      if (len < 0) throw new ArgumentException("len cannnot be negative");
+    public static async Task<byte[]> ReadLenAsync(this Stream s, int len) {
+      if (len < 0) {
+        throw new ArgumentException("len cannnot be negative");
+      }
+
       byte[] buf = new byte[len];
-      int read = 0, justRead;
-
-      while (read < len && (justRead = await s.ReadAsync(buf, read, len - read)) > 0) {
-        read += justRead;
-        progress?.Invoke((double)read / len);
-      }
-      if (read != len) {
-        throw new EndOfStreamException();
-      }
-
+      await s.ReadExactlyAsync(buf).ConfigureAwait(false);
       return buf;
     }
   }

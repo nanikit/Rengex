@@ -1,4 +1,3 @@
-﻿#nullable enable
 using System;
 using System.IO.Pipes;
 using System.Threading.Tasks;
