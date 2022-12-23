@@ -30,14 +30,14 @@ namespace Rengex {
 
   public class TextSpan {
 
-    public string Title { get; private set; }
+    public string? Title { get; private set; }
     public long Offset { get; set; }
     public long Length { get; set; }
     public long End => Offset + Length;
 
-    public string Value;
+    public string? Value;
 
-    public TextSpan(long offset, long length, string value, string name) {
+    public TextSpan(long offset, long length, string? value, string? name) {
       Offset = offset;
       Length = length;
       Value = value;

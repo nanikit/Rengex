@@ -1,4 +1,4 @@
-﻿namespace Rengex {
+namespace Rengex {
   using Rengex.Translator;
   using System;
   using System.IO;
@@ -12,7 +12,6 @@
   /// </summary>
   public partial class Program : Application {
     [STAThread]
-    [HandleProcessCorruptedStateExceptions]
     public static void Main(string[] args) {
       try {
         if (args.Length == 2 && Guid.TryParse(args[1], out Guid guid)) {

@@ -1,5 +1,6 @@
 using System;
 using System.IO.Pipes;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Rengex.Translator {
@@ -21,18 +22,19 @@ namespace Rengex.Translator {
         }
         while (true) {
           object message = await PipeClient.ReadObjAsync<object>().ConfigureAwait(false);
-          if (!(message is string start)) {
+          if (message is not JsonElement element || element.GetString() is not string text) {
             break;
           }
-          string done = await Translator.Translate(start).ConfigureAwait(false);
+          string done = await Translator.Translate(text).ConfigureAwait(false);
           await PipeClient.WriteObjAsync(done).ConfigureAwait(false);
         }
+        await PipeClient.FlushAsync().ConfigureAwait(false);
       }
       catch (Exception error) {
         System.Diagnostics.Debug.WriteLine(error);
       }
       finally {
-        PipeClient.Dispose();
+        await PipeClient.DisposeAsync().ConfigureAwait(false);
       }
     }
   }

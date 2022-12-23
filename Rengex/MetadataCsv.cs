@@ -1,4 +1,4 @@
-﻿namespace Rengex {
+namespace Rengex {
   using System;
   using System.Collections.Generic;
   using System.IO;
@@ -16,13 +16,13 @@
 
     public IEnumerable<TextSpan> GetSpans() {
       var sb = new StringBuilder("\n", 16);
-      TextSpan span = MakeSpan();
+      var span = MakeSpan();
       if (span == null) {
         yield break;
       }
 
       while (!Base.EndOfStream) {
-        TextSpan next = MakeSpan();
+        var next = MakeSpan();
         if (next == null) {
           sb.Append('\n');
           continue;
@@ -39,7 +39,7 @@
       yield return span;
     }
 
-    private TextSpan MakeSpan() {
+    private TextSpan? MakeSpan() {
       string[] csv = (Base.ReadLine() ?? "").Split(',');
       if (csv.Length < 1 || !int.TryParse(csv[0], out int off)) {
         return null;

@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,8 +7,6 @@ using System.Threading.Tasks;
 namespace Rengex.Translator {
 
   public static class SerialUtility {
-    public static BinaryFormatter Formatter = new BinaryFormatter();
-
     public static async Task WriteObjAsync(this Stream stream, object obj) {
       await WriteObjAsync(stream, obj, CancellationToken.None);
     }

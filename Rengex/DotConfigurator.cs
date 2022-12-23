@@ -1,4 +1,4 @@
-﻿namespace Rengex {
+namespace Rengex {
   using System;
   using System.Collections.Generic;
   using System.Globalization;
@@ -63,15 +63,15 @@
 
     private async Task DispatchDeduplicatedEvents() {
       while (true) {
-        foreach (FileSystemEventArgs fse in await GetDeduplicatedEventsTimeout()) {
-          Commited.Invoke(null, fse);
+        foreach (var fse in await GetDeduplicatedEventsTimeout()) {
+          Commited.Invoke(this, fse);
         }
       }
     }
 
     private async Task<IEnumerable<FileSystemEventArgs>> GetDeduplicatedEventsTimeout() {
       var changes = new Dictionary<string, FileSystemEventArgs>();
-      FileSystemEventArgs fse = await ChangeQueue.ReceiveAsync(Cancel.Token).ConfigureAwait(false);
+      var fse = await ChangeQueue.ReceiveAsync(Cancel.Token).ConfigureAwait(false);
       changes[fse.FullPath] = fse;
       var timeout = Task.Delay(MsTimeout);
       while (true) {
@@ -117,9 +117,8 @@
 
     private readonly T ConfigBuilder;
     private readonly string RootPath;
-    private readonly List<Region> Regions = new List<Region>();
-    private readonly Dictionary<string, Region> RegionDict
-      = new Dictionary<string, Region>();
+    private readonly List<Region> Regions = new();
+    private readonly Dictionary<string, Region> RegionDict = new();
 
     public class Region : IComparer<Region> {
       public string Prefix;
@@ -184,7 +183,7 @@
           AddRegion(config);
         }
         catch (Exception exception) {
-          WatcherChangeTypes type = WatcherChangeTypes.Created;
+          var type = WatcherChangeTypes.Created;
           string dir = Path.GetDirectoryName(config);
           string name = Path.GetFileName(config);
           var eventArgs = new FileSystemEventArgs(type, dir, name);
@@ -229,32 +228,32 @@
 
     private void ReflectDelta(FileSystemEventArgs eventArgs) {
       switch (eventArgs.ChangeType) {
-        case WatcherChangeTypes.Changed:
-          if (RegionDict.TryGetValue(eventArgs.FullPath.ToLower(), out Region region)) {
-            region.Value = ConfigBuilder.CreateFromFile(eventArgs.FullPath);
-          }
-          else {
-            AddRegion(eventArgs.FullPath);
-          }
-          break;
-        case WatcherChangeTypes.Deleted:
-          RemoveRegion(eventArgs.FullPath);
-          break;
-        case WatcherChangeTypes.Created:
+      case WatcherChangeTypes.Changed:
+        if (RegionDict.TryGetValue(eventArgs.FullPath.ToLower(), out var region)) {
+          region.Value = ConfigBuilder.CreateFromFile(eventArgs.FullPath);
+        }
+        else {
           AddRegion(eventArgs.FullPath);
-          break;
-        case WatcherChangeTypes.Renamed:
-          var renameArgs = eventArgs as RenamedEventArgs;
-          RemoveRegion(renameArgs.OldFullPath);
-          if (renameArgs.FullPath.EndsWith(ConfigBuilder.GetExtension())) {
-            AddRegion(renameArgs.FullPath);
-          }
-          break;
+        }
+        break;
+      case WatcherChangeTypes.Deleted:
+        RemoveRegion(eventArgs.FullPath);
+        break;
+      case WatcherChangeTypes.Created:
+        AddRegion(eventArgs.FullPath);
+        break;
+      case WatcherChangeTypes.Renamed:
+        var renameArgs = eventArgs as RenamedEventArgs;
+        RemoveRegion(renameArgs.OldFullPath);
+        if (renameArgs.FullPath.EndsWith(ConfigBuilder.GetExtension())) {
+          AddRegion(renameArgs.FullPath);
+        }
+        break;
       }
     }
 
     private void AddRegion(string path) {
-      T cfg = ConfigBuilder.CreateFromFile(path);
+      var cfg = ConfigBuilder.CreateFromFile(path);
       cfg.ConfigResolver = ResolveConfig;
       var region = new Region(path, cfg) {
         Watcher = new FileSystemWatcher(Path.GetDirectoryName(path), Path.GetFileName(path))
@@ -270,7 +269,7 @@
     }
 
     private void RemoveRegion(string path) {
-      if (RegionDict.TryGetValue(path.ToLower(), out Region region)) {
+      if (RegionDict.TryGetValue(path.ToLower(), out var region)) {
         region.Watcher?.Dispose();
         Regions.Remove(region);
         RegionDict.Remove(path);
