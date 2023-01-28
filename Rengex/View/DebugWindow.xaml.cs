@@ -1,4 +1,4 @@
-﻿namespace Rengex {
+namespace Rengex {
   using System;
   using System.Collections.Generic;
   using System.Diagnostics;
@@ -27,7 +27,7 @@
       string jp = Regex.Replace(TextUtils.ClassJap, @"\\u(....)", @"\x{$1}");
       txt = txt.Replace("\\jp", jp);
       txt = txt.Replace("\\w", @"[\pL\pN_]");
-      txt = "(?imx)" + txt;
+      txt = "(?mx)" + txt;
       return txt;
     }
 
