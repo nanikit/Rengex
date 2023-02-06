@@ -1,5 +1,7 @@
 ﻿# Rengex
 
+[![discord link](https://img.shields.io/badge/discord-chat-5865F2?logo=discord)](https://discord.gg/4mJh9EUzfV)
+
 ![프로그램 창 이미지](doc/mainwindow.png)
 
 텍스트 파일의 일부분만 추출해 번역하는 툴입니다.
@@ -124,10 +126,6 @@ bbd            : 잘라내기
 빈 문자열로 바꾸고 싶으면 두번째 줄을 비우지 말고 \$을 적습니다.
 
 \*[파일경로]인 줄은 해당 위치에서 다른 설정파일을 적용합니다. 치환은 한 패턴이 성공하더라도 전부 수행됩니다.
-
-## 건의 방법
-
-수정을 원하는 부분이 있으면 이슈를 올려주세요.
 
 ## 같이 쓰면 유용한 프로그램
 
