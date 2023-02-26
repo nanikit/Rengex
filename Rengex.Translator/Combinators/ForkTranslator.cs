@@ -1,4 +1,4 @@
-﻿namespace Rengex.Translator {
+namespace Rengex.Translator {
   using Nanikit.Ehnd;
   using System;
   using System.Collections.Generic;
@@ -9,15 +9,17 @@
   public class ForkTranslator : ITranslator {
     private readonly int _poolSize;
     private readonly Task _managerTask;
-    private readonly List<Task> _workers = new List<Task>();
-    private readonly List<ITranslator> _translators = new List<ITranslator>();
-    private readonly BufferBlock<Job> _jobs = new BufferBlock<Job>();
-    private readonly CancellationTokenSource _cancel = new CancellationTokenSource();
+    private readonly List<Task> _workers = new();
+    private readonly List<ITranslator> _translators = new();
+    private readonly BufferBlock<Job> _jobs = new();
+    private readonly CancellationTokenSource _cancel = new();
     private bool _isDisposed;
+    private DateTime _lastSpawnTime;
 
     public ForkTranslator(int poolSize, ITranslator basis) {
       _poolSize = Math.Max(1, poolSize);
       _translators.Add(basis);
+      _lastSpawnTime = DateTime.Now;
       _managerTask = Task.Run(() => Manager());
     }
 
@@ -54,13 +56,13 @@
     private async Task Manager() {
       while (!_cancel?.IsCancellationRequested ?? false) {
         ReflectPoolSize();
-        Job? job = await GetJobOrDefault().ConfigureAwait(false);
+        var job = await GetJobOrDefault().ConfigureAwait(false);
         if (job == null) {
           break;
         }
         await ScheduleAndWaitFreeWorker(job).ConfigureAwait(false);
       }
-      foreach (ITranslator translator in _translators) {
+      foreach (var translator in _translators) {
         translator.Dispose();
       }
     }
@@ -84,12 +86,12 @@
     }
 
     private async Task<Job?> GetJobOrDefault() {
-      Task<Job> dispatch = _jobs.ReceiveAsync(_cancel!.Token);
+      var dispatch = _jobs.ReceiveAsync(_cancel!.Token);
       _ = await Task.WhenAny(dispatch).ConfigureAwait(false);
       if (_cancel?.IsCancellationRequested ?? true) {
         return null;
       }
-      Job job = await dispatch.ConfigureAwait(false);
+      var job = await dispatch.ConfigureAwait(false);
       return job;
     }
 
@@ -111,12 +113,12 @@
     private async Task ScheduleAfterCompletion(Job job) {
       var abort = Task.Delay(TimeSpan.FromDays(10), _cancel!.Token);
       var seats = Task.WhenAny(_workers);
-      Task fin = await Task.WhenAny(abort, seats).ConfigureAwait(false);
+      var fin = await Task.WhenAny(abort, seats).ConfigureAwait(false);
       if (fin == abort) {
         return;
       }
 
-      Task vacant = await seats.ConfigureAwait(false);
+      var vacant = await seats.ConfigureAwait(false);
       int endedIdx = _workers.IndexOf(vacant);
       _workers[endedIdx] = Worker(_translators[endedIdx], job);
     }
@@ -150,7 +152,7 @@
         Source = source;
       }
 
-      public TaskCompletionSource<string> Client = new TaskCompletionSource<string>();
+      public TaskCompletionSource<string> Client = new();
       public string Source;
       public int RetryCount;
     }
