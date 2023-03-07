@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -55,7 +55,7 @@ namespace Rengex {
     }
 
     public static StreamWriter GetReadSharedWriter(string path) {
-      FileStream file = File.Open(Util.PrecreateDirectory(path), FileMode.Create, FileAccess.Write, FileShare.Read);
+      var file = File.Open(Util.PrecreateDirectory(path), FileMode.Create, FileAccess.Write, FileShare.Read);
       file.SetLength(0);
       return new StreamWriter(file, Encoding.UTF8);
     }

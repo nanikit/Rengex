@@ -8,7 +8,7 @@ namespace Rengex {
   /// State
   /// </summary>
   sealed class MetadataCsvReader : IDisposable {
-    StreamReader Base;
+    readonly StreamReader Base;
 
     public MetadataCsvReader(string path) {
       Base = new StreamReader(path);
@@ -56,10 +56,7 @@ namespace Rengex {
     }
 
     public void Dispose() {
-      if (Base != null) {
-        Base.Dispose();
-        Base = null;
-      }
+      Base?.Dispose();
     }
   }
 }

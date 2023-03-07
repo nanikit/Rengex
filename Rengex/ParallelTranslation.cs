@@ -1,4 +1,4 @@
-﻿namespace Rengex {
+namespace Rengex {
   using Rengex.Translator;
   using System;
   using System.Threading.Tasks;
@@ -49,22 +49,16 @@
   abstract class Jp2KrWork {
 
     private static string PhaseToString(TranslationPhase phase) {
-      switch (phase) {
-        case TranslationPhase.Complete:
-          return "완료";
-        case TranslationPhase.Error:
-          return "에러 - ";
-        case TranslationPhase.Export:
-          return "병합 중…";
-        case TranslationPhase.Import:
-          return "추출 중…";
-        case TranslationPhase.Translation:
-          return "번역 중…";
-        case TranslationPhase.Init:
-          return "대기 중…";
-        default:
-          return "";
-      }
+      return phase switch
+      {
+        TranslationPhase.Complete => "완료",
+        TranslationPhase.Error => "에러 - ",
+        TranslationPhase.Export => "병합 중…",
+        TranslationPhase.Import => "추출 중…",
+        TranslationPhase.Translation => "번역 중…",
+        TranslationPhase.Init => "대기 중…",
+        _ => "",
+      };
     }
 
     private static string GetEllipsisPath(TranslationUnit unit) {
@@ -155,11 +149,11 @@
     }
   }
 
-  class OnestopJp2Kr : Jp2KrWork, IJp2KrLogger {
+  class OneStopJp2Kr : Jp2KrWork, IJp2KrLogger {
     private readonly ITranslator translator;
     private int translationSize;
 
-    public OnestopJp2Kr(TranslationUnit tu, ITranslator engine) : base(tu) {
+    public OneStopJp2Kr(TranslationUnit tu, ITranslator engine) : base(tu) {
       translator = engine;
     }
 

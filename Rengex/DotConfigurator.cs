@@ -31,12 +31,10 @@ namespace Rengex {
 
   internal class FileTimeoutWatcher : IDisposable {
 
-    public event FileSystemEventHandler Commited = delegate { };
+    public event FileSystemEventHandler Committed = delegate { };
 
-    private readonly BufferBlock<FileSystemEventArgs> ChangeQueue
-      = new BufferBlock<FileSystemEventArgs>();
-    private readonly CancellationTokenSource Cancel = new CancellationTokenSource();
-    private readonly Task TimeoutFilter;
+    private readonly BufferBlock<FileSystemEventArgs> ChangeQueue = new();
+    private readonly CancellationTokenSource Cancel = new();
     private readonly int MsTimeout;
 
     public FileTimeoutWatcher(int msTimeout) {
@@ -44,8 +42,8 @@ namespace Rengex {
     }
 
     public FileTimeoutWatcher(int msTimeout, params FileSystemWatcher[] watchers) : this(msTimeout) {
-      TimeoutFilter = DispatchDeduplicatedEvents();
-      foreach (FileSystemWatcher watcher in watchers) {
+      _ = DispatchDeduplicatedEvents();
+      foreach (var watcher in watchers) {
         Subscribe(watcher);
       }
     }
@@ -64,7 +62,7 @@ namespace Rengex {
     private async Task DispatchDeduplicatedEvents() {
       while (true) {
         foreach (var fse in await GetDeduplicatedEventsTimeout()) {
-          Commited.Invoke(this, fse);
+          Committed.Invoke(this, fse);
         }
       }
     }
@@ -76,7 +74,7 @@ namespace Rengex {
       var timeout = Task.Delay(MsTimeout);
       while (true) {
         var fetch = ChangeQueue.ReceiveAsync(Cancel.Token);
-        Task fin = await Task.WhenAny(fetch, timeout).ConfigureAwait(false);
+        var fin = await Task.WhenAny(fetch, timeout).ConfigureAwait(false);
         if (fin == timeout) {
           break;
         }
@@ -118,7 +116,7 @@ namespace Rengex {
     private readonly T ConfigBuilder;
     private readonly string RootPath;
     private readonly List<Region> Regions = new();
-    private readonly Dictionary<string, Region> RegionDict = new();
+    private readonly Dictionary<string, Region> RegionDictionary = new();
 
     public class Region : IComparer<Region> {
       public string Prefix;
@@ -161,7 +159,7 @@ namespace Rengex {
       Faulted += faulted;
       ConfigBuilder = new T();
       TimeoutWatcher = GetTimeoutWatcher();
-      TimeoutWatcher.Commited += FileChanged;
+      TimeoutWatcher.Committed += FileChanged;
       CacheAllConfigs();
     }
 
@@ -194,7 +192,7 @@ namespace Rengex {
     }
 
     private T ResolveConfig(string path) {
-      return RegionDict[path.ToLower()].Value;
+      return RegionDictionary[path.ToLower()].Value;
     }
 
     private void WriteDefaultConfig(string extension) {
@@ -229,7 +227,7 @@ namespace Rengex {
     private void ReflectDelta(FileSystemEventArgs eventArgs) {
       switch (eventArgs.ChangeType) {
       case WatcherChangeTypes.Changed:
-        if (RegionDict.TryGetValue(eventArgs.FullPath.ToLower(), out var region)) {
+        if (RegionDictionary.TryGetValue(eventArgs.FullPath.ToLower(), out var region)) {
           region.Value = ConfigBuilder.CreateFromFile(eventArgs.FullPath);
         }
         else {
@@ -265,14 +263,14 @@ namespace Rengex {
         idx = ~idx;
       }
       Regions.Insert(idx, region);
-      RegionDict[path.ToLower()] = region;
+      RegionDictionary[path.ToLower()] = region;
     }
 
     private void RemoveRegion(string path) {
-      if (RegionDict.TryGetValue(path.ToLower(), out var region)) {
+      if (RegionDictionary.TryGetValue(path.ToLower(), out var region)) {
         region.Watcher?.Dispose();
         Regions.Remove(region);
-        RegionDict.Remove(path);
+        RegionDictionary.Remove(path);
       }
     }
 
@@ -309,8 +307,8 @@ namespace Rengex {
     }
 
     public RegexConfiguration GetConfiguration(string path) {
-      MatchConfig matcher = Matcher.GetConfiguration(path);
-      ReplaceConfig replacer = Replacer.GetConfiguration(path);
+      var matcher = Matcher.GetConfiguration(path);
+      var replacer = Replacer.GetConfiguration(path);
       return new RegexConfiguration(matcher, replacer);
     }
 

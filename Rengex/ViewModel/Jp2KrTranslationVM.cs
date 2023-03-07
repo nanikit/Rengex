@@ -1,4 +1,4 @@
-﻿namespace Rengex {
+namespace Rengex {
   using Nanikit.Ehnd;
   using Rengex.Translator;
   using System;
@@ -68,9 +68,7 @@
 
     public async Task MachineTranslation() {
       workKind = "번역: ";
-      if (_selfTranslator == null) {
-        _selfTranslator = new EhndTranslator(Properties.Settings.Default.EzTransDir);
-      }
+      _selfTranslator ??= new EhndTranslator(Properties.Settings.Default.EzTransDir);
 
       using var engine = new ForkTranslator(coreCount, _selfTranslator);
 
@@ -88,14 +86,12 @@
 
     public async Task OnestopTranslation() {
       workKind = "원터치: ";
-      if (_selfTranslator == null) {
-        _selfTranslator = new EhndTranslator(Properties.Settings.Default.EzTransDir);
-      }
+      _selfTranslator ??= new EhndTranslator(Properties.Settings.Default.EzTransDir);
 
       using var engine = new ForkTranslator(coreCount, _selfTranslator);
 
       Jp2KrWork genVm(TranslationUnit x) {
-        return new OnestopJp2Kr(x, engine);
+        return new OneStopJp2Kr(x, engine);
       }
 
       await ParallelForEach(genVm).ConfigureAwait(false);
@@ -123,13 +119,13 @@
     }
 
     private Task ParallelForEach(Func<TranslationUnit, Jp2KrWork> genViewModel) {
-      List<TranslationUnit> transUnits = translations ?? FindTranslations().ToList();
+      var translationUnits = translations ?? FindTranslations().ToList();
       int complete = 0;
       Progress.Value = 0;
-      Progress.Label = $"{workKind}{complete} / {transUnits.Count}";
+      Progress.Label = $"{workKind}{complete} / {translationUnits.Count}";
 
-      return transUnits.ForEachPinnedAsync(coreCount, async t => {
-        Jp2KrWork item = genViewModel(t);
+      return translationUnits.ForEachPinnedAsync(coreCount, async t => {
+        var item = genViewModel(t);
         Ongoings.Add(item.Progress);
         try {
           await Task.Run(() => item.Process());
@@ -150,8 +146,8 @@
         finally {
           _ = Ongoings.Remove(item.Progress);
           complete++;
-          Progress.Value = (double)complete / transUnits.Count * 100;
-          Progress.Label = $"{workKind}{complete} / {transUnits.Count}";
+          Progress.Value = (double)complete / translationUnits.Count * 100;
+          Progress.Label = $"{workKind}{complete} / {translationUnits.Count}";
         }
       });
     }
