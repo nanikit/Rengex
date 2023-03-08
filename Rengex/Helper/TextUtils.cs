@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Rengex.Helper {
   public static class TextUtils {
@@ -136,22 +137,22 @@ namespace Rengex.Helper {
   class CharCountingReader {
     public int Position { get; private set; }
 
-    private readonly TextReader Base;
-    private char[] Buffer;
+    private readonly TextReader _base;
+    private char[] _buffer;
 
     public CharCountingReader(TextReader reader, char[] buffer = null) {
-      Base = reader;
-      Buffer = buffer ?? new char[2048];
+      _base = reader;
+      _buffer = buffer ?? new char[2048];
     }
 
-    public int TextCopyTo(TextWriter destination, int length) {
+    public async Task<int> TextCopyTo(TextWriter destination, int length) {
       int remain = length;
       while (remain > 0) {
-        int read = Base.ReadBlock(Buffer, 0, Math.Min(remain, Buffer.Length));
+        int read = await _base.ReadAsync(_buffer, 0, Math.Min(remain, _buffer.Length)).ConfigureAwait(false);
         if (read <= 0) {
           break;
         }
-        destination.Write(Buffer, 0, read);
+        await destination.WriteAsync(_buffer, 0, read).ConfigureAwait(false);
         remain -= read;
       }
 
@@ -160,15 +161,15 @@ namespace Rengex.Helper {
       return totalRead;
     }
 
-    public string ReadString(int length) {
-      if (Buffer.Length < length) {
-        Buffer = new char[length];
+    public async Task<string?> ReadString(int length) {
+      if (_buffer.Length < length) {
+        _buffer = new char[length];
       }
 
-      int read = Base.ReadBlock(Buffer, 0, length);
+      int read = await _base.ReadAsync(_buffer, 0, length).ConfigureAwait(false);
       Position += read;
 
-      return read == length ? new string(Buffer, 0, length) : null;
+      return read == length ? new string(_buffer, 0, length) : null;
     }
   }
 

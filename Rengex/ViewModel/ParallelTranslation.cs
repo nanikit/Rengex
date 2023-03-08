@@ -112,11 +112,10 @@ namespace Rengex {
   class MergeJp2Kr : Jp2KrWork {
     public MergeJp2Kr(TranslationUnit tu) : base(tu) { }
 
-    public override Task Process() {
+    public override async Task Process() {
       SetProgress(TranslationPhase.Export, 0);
-      translation.BuildTranslation();
+      await translation.BuildTranslation().ConfigureAwait(false);
       SetProgress(TranslationPhase.Complete, 100);
-      return Task.CompletedTask;
     }
   }
 
@@ -169,7 +168,7 @@ namespace Rengex {
       }
 
       SetProgress(TranslationPhase.Export, 90);
-      translation.BuildTranslation();
+      await translation.BuildTranslation().ConfigureAwait(false);
 
       SetProgress(TranslationPhase.Complete, 100);
     }

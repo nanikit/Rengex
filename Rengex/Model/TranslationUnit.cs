@@ -49,7 +49,7 @@ namespace Rengex.Model {
       await File.WriteAllTextAsync(targetPath, kr).ConfigureAwait(false);
     }
 
-    public void BuildTranslation() {
+    public async Task BuildTranslation() {
       string resultPath = Util.PrecreateDirectory(ManagedPath.ResultPath);
       if (!StringWithCodePage.ReadAllTextAutoDetect(ManagedPath.OriginalPath, out var sourceText)) {
         File.Copy(ManagedPath.OriginalPath, resultPath, true);
@@ -61,7 +61,7 @@ namespace Rengex.Model {
       using var trans = File.OpenText(ManagedPath.TargetPath);
       using var source = new StringReader(sourceText.Content);
       using var result = new StreamWriter(File.Create(resultPath), targetEncoding);
-      CompileTranslation(meta, trans, source, result);
+      await CompileTranslation(meta, trans, source, result).ConfigureAwait(false);
     }
 
     private async Task WriteIntermediates(IEnumerable<TextSpan> spans) {
@@ -78,30 +78,30 @@ namespace Rengex.Model {
       }
     }
 
-    private void CompileTranslation(MetadataCsvReader meta, TextReader translation, TextReader source, TextWriter dest) {
+    private async Task CompileTranslation(MetadataCsvReader meta, TextReader translation, TextReader source, TextWriter dest) {
       var src = new CharCountingReader(source);
       var substitution = new SpanPairReader(translation);
       _config = DotConfig.GetConfiguration(ManagedPath.OriginalPath);
 
       foreach (var span in meta.GetSpans()) {
         int preserveSize = (int)span.Offset - src.Position;
-        if (src.TextCopyTo(dest, preserveSize) != preserveSize) {
+        if (await src.TextCopyTo(dest, preserveSize).ConfigureAwait(false) != preserveSize) {
           return;
         }
 
         string translated = substitution.ReadCorrespondingSpan(span);
-        translated = ApplyPostProcess(span, src, translated);
+        translated = await ApplyPostProcess(span, src, translated).ConfigureAwait(false);
         if (translated == null) {
           continue;
         }
-        dest.Write(translated);
+        await dest.WriteAsync(translated).ConfigureAwait(false);
       }
-      _ = src.TextCopyTo(dest, int.MaxValue);
+      await src.TextCopyTo(dest, int.MaxValue).ConfigureAwait(false);
       // TODO: warn mismatch of translation having more line
     }
 
-    private string ApplyPostProcess(TextSpan span, CharCountingReader src, string translation) {
-      string original = src.ReadString((int)span.Length);
+    private async Task<string> ApplyPostProcess(TextSpan span, CharCountingReader src, string translation) {
+      string? original = await src.ReadString((int)span.Length).ConfigureAwait(false);
       return _config!.PostReplace(span.Title ?? "", original, translation);
     }
 
