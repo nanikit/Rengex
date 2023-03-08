@@ -29,7 +29,7 @@ namespace Rengex {
     string Origin { get; }
   }
 
-  internal class FileTimeoutWatcher : IDisposable {
+  internal class DebounceWatcher : IDisposable {
 
     public event FileSystemEventHandler Committed = delegate { };
 
@@ -37,11 +37,11 @@ namespace Rengex {
     private readonly CancellationTokenSource Cancel = new();
     private readonly int MsTimeout;
 
-    public FileTimeoutWatcher(int msTimeout) {
+    public DebounceWatcher(int msTimeout) {
       MsTimeout = msTimeout;
     }
 
-    public FileTimeoutWatcher(int msTimeout, params FileSystemWatcher[] watchers) : this(msTimeout) {
+    public DebounceWatcher(int msTimeout, params FileSystemWatcher[] watchers) : this(msTimeout) {
       _ = DispatchDeduplicatedEvents();
       foreach (var watcher in watchers) {
         Subscribe(watcher);
@@ -111,7 +111,7 @@ namespace Rengex {
     /// <summary>
     /// 설정 변경을 탐지하기 위한 감시자.
     /// </summary>
-    private readonly FileTimeoutWatcher TimeoutWatcher;
+    private readonly DebounceWatcher DebounceWatcher;
 
     private readonly T ConfigBuilder;
     private readonly string RootPath;
@@ -158,17 +158,25 @@ namespace Rengex {
       ConfigReloaded += reloaded;
       Faulted += faulted;
       ConfigBuilder = new T();
-      TimeoutWatcher = GetTimeoutWatcher();
-      TimeoutWatcher.Committed += FileChanged;
+      DebounceWatcher = GetTimeoutWatcher();
+      DebounceWatcher.Committed += FileChanged;
       CacheAllConfigs();
     }
 
-    private FileTimeoutWatcher GetTimeoutWatcher() {
+    public T GetConfiguration(string path) {
+      string absolute = Path.GetFullPath(path).ToLower(CultureInfo.InvariantCulture);
+      return Regions.First(x =>
+        absolute.EndsWith(x.Suffix, StringComparison.InvariantCultureIgnoreCase) &&
+        absolute.StartsWith(x.Prefix, StringComparison.InvariantCultureIgnoreCase)
+      ).Value;
+    }
+
+    private DebounceWatcher GetTimeoutWatcher() {
       var watcher = new FileSystemWatcher(RootPath, "*" + ConfigBuilder.GetExtension()) {
         IncludeSubdirectories = true,
         EnableRaisingEvents = true
       };
-      return new FileTimeoutWatcher(100, watcher);
+      return new DebounceWatcher(100, watcher);
     }
 
     private void CacheAllConfigs() {
@@ -182,9 +190,9 @@ namespace Rengex {
         }
         catch (Exception exception) {
           var type = WatcherChangeTypes.Created;
-          string dir = Path.GetDirectoryName(config);
+          string directory = Path.GetDirectoryName(config);
           string name = Path.GetFileName(config);
-          var eventArgs = new FileSystemEventArgs(type, dir, name);
+          var eventArgs = new FileSystemEventArgs(type, directory, name);
           Faulted.Invoke(eventArgs, exception);
           return;
         }
@@ -201,14 +209,6 @@ namespace Rengex {
         Util.PrecreateDirectory(top);
         File.WriteAllText(top, ConfigBuilder.GetDefaultConfig());
       }
-    }
-
-    public T GetConfiguration(string path) {
-      string absolute = Path.GetFullPath(path).ToLower(CultureInfo.InvariantCulture);
-      return Regions.First(x =>
-        absolute.EndsWith(x.Suffix, StringComparison.InvariantCultureIgnoreCase) &&
-        absolute.StartsWith(x.Prefix, StringComparison.InvariantCultureIgnoreCase)
-      ).Value;
     }
 
     private void FileChanged(object sender, FileSystemEventArgs fse) {
@@ -257,7 +257,7 @@ namespace Rengex {
         Watcher = new FileSystemWatcher(Path.GetDirectoryName(path), Path.GetFileName(path))
       };
       region.Watcher.EnableRaisingEvents = true;
-      TimeoutWatcher.Subscribe(region.Watcher);
+      DebounceWatcher.Subscribe(region.Watcher);
       int idx = Regions.BinarySearch(region, region);
       if (idx < 0) {
         idx = ~idx;
@@ -280,7 +280,7 @@ namespace Rengex {
 
     protected void Dispose(bool disposing) {
       if (disposing) {
-        TimeoutWatcher.Dispose();
+        DebounceWatcher.Dispose();
       }
     }
   }
