@@ -1,9 +1,11 @@
-﻿namespace Rengex {
+namespace Rengex.Model {
   using System;
   using System.Collections.Generic;
   using System.IO;
   using System.Text.RegularExpressions;
   using System.Threading.Tasks;
+  using Rengex;
+  using Rengex.Helper;
 
   public class ManagedPath {
 

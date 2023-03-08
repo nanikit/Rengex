@@ -1,6 +1,9 @@
 ﻿namespace Rengex.View {
   using Microsoft.Win32;
   using Nanikit.Ehnd;
+  using Rengex;
+  using Rengex.Helper;
+  using Rengex.Model;
   using System;
   using System.IO;
   using System.Threading.Tasks;
@@ -71,20 +74,20 @@
 
     private void RunOperation(Operation kind) {
       switch (kind) {
-        case Operation.Import:
-          Import();
-          break;
-        case Operation.Translate:
-          Translate();
-          break;
-        case Operation.Export:
-          Export();
-          break;
-        case Operation.Onestop:
-          Onestop();
-          break;
-        case Operation.None:
-          break;
+      case Operation.Import:
+        Import();
+        break;
+      case Operation.Translate:
+        Translate();
+        break;
+      case Operation.Export:
+        Export();
+        break;
+      case Operation.Onestop:
+        Onestop();
+        break;
+      case Operation.None:
+        break;
       }
     }
 

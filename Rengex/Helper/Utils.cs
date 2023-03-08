@@ -1,4 +1,4 @@
-﻿namespace Rengex {
+namespace Rengex.Helper {
   using System;
   using System.Collections.Concurrent;
   using System.Collections.Generic;
@@ -32,8 +32,8 @@
     }
 
     public static Task ForEachAsync<T>(this IEnumerable<T> source, int dop, Func<T, Task> body) {
-      IList<IEnumerator<T>> parts = Partitioner.Create(source).GetPartitions(dop);
-      IEnumerable<Task> tasks = parts.Select(p => Task.Run(async () => {
+      var parts = Partitioner.Create(source).GetPartitions(dop);
+      var tasks = parts.Select(p => Task.Run(async () => {
         using (p) {
           while (p.MoveNext()) {
             await body(p.Current).ConfigureAwait(false);
@@ -44,8 +44,8 @@
     }
 
     public static Task ForEachPinnedAsync<T>(this IEnumerable<T> source, int dop, Func<T, Task> body) {
-      IList<IEnumerator<T>> parts = Partitioner.Create(source).GetPartitions(dop);
-      IEnumerable<Task> tasks = parts.Select(async p => {
+      var parts = Partitioner.Create(source).GetPartitions(dop);
+      var tasks = parts.Select(async p => {
         using (p) {
           while (p.MoveNext()) {
             await body(p.Current);

@@ -1,4 +1,6 @@
 namespace Rengex {
+  using Rengex.Helper;
+  using Rengex.Model;
   using Rengex.Translator;
   using System;
   using System.Threading.Tasks;

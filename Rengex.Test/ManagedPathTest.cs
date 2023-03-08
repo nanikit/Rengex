@@ -1,5 +1,5 @@
 namespace Rengex.Tests {
-  using Rengex;
+  using Rengex.Model;
   using Xunit;
 
   public class ManagedPathTest {

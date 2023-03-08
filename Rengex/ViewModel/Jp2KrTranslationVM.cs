@@ -1,5 +1,7 @@
 namespace Rengex {
   using Nanikit.Ehnd;
+  using Rengex.Helper;
+  using Rengex.Model;
   using Rengex.Translator;
   using System;
   using System.Collections.Generic;

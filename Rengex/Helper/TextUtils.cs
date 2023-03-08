@@ -3,7 +3,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Rengex {
+namespace Rengex.Helper {
   public static class TextUtils {
     public const string ClassJap = ""
       + @"\u2E80-\u2EFF" // 한,중,일 부수 보충, ⺀-⻿
@@ -100,7 +100,7 @@ namespace Rengex {
         if (!charComplete) {
           raw.Position--;
         }
-        readChars += (charComplete && byteLength == 4) ? 2 : 1;
+        readChars += charComplete && byteLength == 4 ? 2 : 1;
       }
       return readChars;
     }
@@ -181,8 +181,8 @@ namespace Rengex {
         "utf-16",
         "unicodeFFFE",
       };
-      EncoderFallback efall = EncoderFallback.ExceptionFallback;
-      DecoderFallback dfall = DecoderFallback.ExceptionFallback;
+      var efall = EncoderFallback.ExceptionFallback;
+      var dfall = DecoderFallback.ExceptionFallback;
       guessed = null;
       foreach (string name in encodingNames) {
         try {

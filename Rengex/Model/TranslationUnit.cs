@@ -1,4 +1,5 @@
-﻿namespace Rengex {
+namespace Rengex.Model {
+  using Rengex.Helper;
   using Rengex.Translator;
   using System;
   using System.Collections.Generic;

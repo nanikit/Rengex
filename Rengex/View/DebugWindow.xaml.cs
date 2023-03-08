@@ -6,6 +6,8 @@ namespace Rengex {
   using System.Linq;
   using System.Text.RegularExpressions;
   using System.Windows;
+  using Rengex.Helper;
+  using Rengex.Model;
 
   internal class ConfigTabItemVM {
     private static readonly Regex LookbehindGroup = ExtendedMatcher.GetExtendedGroupRegex(@"\(<[=!]");
