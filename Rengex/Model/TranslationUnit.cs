@@ -9,98 +9,81 @@ namespace Rengex.Model {
 
   public class TranslationUnit {
 
-    public ManagedPath Workspace { get; set; }
-    public RegexDotConfiguration DotConfig { get; set; }
+    public ManagedPath ManagedPath { get; set; }
+    public IRegexDotConfiguration DotConfig { get; set; }
 
-    private static readonly UTF8Encoding _utf8WithBom = new UTF8Encoding(true);
+    private static readonly UTF8Encoding _utf8WithBom = new(true);
     private static readonly Encoding _cp949 = Encoding.GetEncoding(949);
     private RegexConfiguration? _config;
 
-    public TranslationUnit(RegexDotConfiguration dot, ManagedPath workspace) {
+    public TranslationUnit(IRegexDotConfiguration dot, ManagedPath path) {
       DotConfig = dot;
-      Workspace = workspace;
+      ManagedPath = path;
     }
 
     public async Task ExtractSourceText() {
-      if (!Workspace.IsInProject) {
-        await Workspace.CopyToSourceDirectory().ConfigureAwait(false);
+      if (!ManagedPath.IsInProject) {
+        await ManagedPath.CopyToSourceDirectory().ConfigureAwait(false);
       }
-      if (!StringWithCodePage.ReadAllTextAutoDetect(Workspace.SourcePath, out StringWithCodePage sourceText)) {
+      if (!StringWithCodePage.ReadAllTextAutoDetect(ManagedPath.OriginalPath, out var sourceText)) {
         // TODO: UI message
         return;
       }
 
       string txt = sourceText.Content;
-      _config = DotConfig.GetConfiguration(Workspace.SourcePath);
-      WriteIntermediates(_config.Matches(txt));
+      _config = DotConfig.GetConfiguration(ManagedPath.OriginalPath);
+      await WriteIntermediates(_config.Matches(txt)).ConfigureAwait(false);
     }
 
     public async Task MachineTranslate(ITranslator translator) {
-      if (!File.Exists(Workspace.TranslationPath)) {
+      if (!File.Exists(ManagedPath.SourcePath)) {
         await ExtractSourceText().ConfigureAwait(false);
       }
-      if (!File.Exists(Workspace.TranslationPath)) {
+      if (!File.Exists(ManagedPath.SourcePath)) {
         return;
       }
 
-      string jp = await File.ReadAllTextAsync(Workspace.TranslationPath).ConfigureAwait(false);
+      string jp = await File.ReadAllTextAsync(ManagedPath.SourcePath).ConfigureAwait(false);
       string kr = await translator.Translate(jp).ConfigureAwait(false);
-      await File.WriteAllTextAsync(GetAlternativeTranslationPath(), kr).ConfigureAwait(false);
+      string targetPath = Util.PrecreateDirectory(ManagedPath.TargetPath);
+      await File.WriteAllTextAsync(targetPath, kr).ConfigureAwait(false);
     }
 
     public void BuildTranslation() {
-      string translation = GetAlternativeTranslationIfExists();
-      string destPath = Util.PrecreateDirectory(Workspace.DestinationPath);
-      if (!StringWithCodePage.ReadAllTextAutoDetect(Workspace.SourcePath, out StringWithCodePage sourceText)) {
-        File.Copy(Workspace.SourcePath, destPath, true);
+      string resultPath = Util.PrecreateDirectory(ManagedPath.ResultPath);
+      if (!StringWithCodePage.ReadAllTextAutoDetect(ManagedPath.OriginalPath, out var sourceText)) {
+        File.Copy(ManagedPath.OriginalPath, resultPath, true);
         return;
       }
 
-      Encoding destinationEncoding = sourceText.Encoding.CodePage == 932 ? _cp949 : _utf8WithBom;
-      using var meta = new MetadataCsvReader(Workspace.MetadataPath);
-      using StreamReader trans = File.OpenText(translation);
+      var targetEncoding = sourceText.Encoding.CodePage == 932 ? _cp949 : _utf8WithBom;
+      using var meta = new MetadataCsvReader(ManagedPath.MetadataPath);
+      using var trans = File.OpenText(ManagedPath.TargetPath);
       using var source = new StringReader(sourceText.Content);
-      using var dest = new StreamWriter(File.Create(destPath), destinationEncoding);
-      CompileTranslation(meta, trans, source, dest);
+      using var result = new StreamWriter(File.Create(resultPath), targetEncoding);
+      CompileTranslation(meta, trans, source, result);
     }
 
-    private void WriteIntermediates(IEnumerable<TextSpan> spans) {
-      _config = DotConfig.GetConfiguration(Workspace.SourcePath);
-      using StreamWriter meta = TextUtils.GetReadSharedWriter(Workspace.MetadataPath);
-      using StreamWriter trans = TextUtils.GetReadSharedWriter(Workspace.TranslationPath);
-      foreach (TextSpan span in spans) {
+    private async Task WriteIntermediates(IEnumerable<TextSpan> spans) {
+      _config = DotConfig.GetConfiguration(ManagedPath.OriginalPath);
+      using var meta = TextUtils.GetReadSharedWriter(ManagedPath.MetadataPath);
+      using var trans = TextUtils.GetReadSharedWriter(ManagedPath.SourcePath);
+      foreach (var span in spans) {
         string value = span.Value;
-        string newLines = new string('\n', TextUtils.CountLines(value));
-        meta.WriteLine($"{span.Offset},{span.Length},{span.Title}{newLines}");
+        string newLines = new('\n', TextUtils.CountLines(value));
+        await meta.WriteLineAsync($"{span.Offset},{span.Length},{span.Title}{newLines}").ConfigureAwait(false);
 
         string preprocessed = _config.PreReplace(span.Title, value);
-        trans.WriteLine(preprocessed);
+        await trans.WriteLineAsync(preprocessed).ConfigureAwait(false);
       }
-    }
-
-    private string GetAlternativeTranslationIfExists() {
-      string anemone = GetAlternativeTranslationPath();
-      return File.Exists(anemone) ? anemone : Workspace.TranslationPath;
-    }
-
-    private string GetAlternativeTranslationPath() {
-      string basename = GetPathWithoutExtension(Workspace.TranslationPath);
-      string extension = Path.GetExtension(Workspace.TranslationPath);
-      return $"{basename}_번역{extension}";
-    }
-
-    private static string GetPathWithoutExtension(string path) {
-      string dir = Path.GetDirectoryName(path)!;
-      string filename = Path.GetFileNameWithoutExtension(path);
-      return $"{dir}\\{filename}";
     }
 
     private void CompileTranslation(MetadataCsvReader meta, TextReader translation, TextReader source, TextWriter dest) {
       var src = new CharCountingReader(source);
       var substitution = new SpanPairReader(translation);
-      _config = DotConfig.GetConfiguration(Workspace.SourcePath);
+      _config = DotConfig.GetConfiguration(ManagedPath.OriginalPath);
 
-      foreach (TextSpan span in meta.GetSpans()) {
+      foreach (var span in meta.GetSpans()) {
         int preserveSize = (int)span.Offset - src.Position;
         if (src.TextCopyTo(dest, preserveSize) != preserveSize) {
           return;
@@ -129,7 +112,7 @@ namespace Rengex.Model {
   /// ReadLine을 쓰면 CR, LF, CR/LF을 구분할 수 없게 되어 수작업함.
   /// </summary>
   internal class SpanPairReader {
-    private readonly StringBuilder Buffer = new StringBuilder();
+    private readonly StringBuilder Buffer = new();
     private readonly TextReader Reader;
 
     public SpanPairReader(TextReader reader) {

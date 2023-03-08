@@ -1,10 +1,14 @@
-﻿namespace Rengex.Model {
+namespace Rengex.Model {
   using System;
   using System.Collections.Generic;
   using System.IO;
   using System.Linq;
 
-  public class RegexDotConfiguration {
+  public interface IRegexDotConfiguration {
+    RegexConfiguration GetConfiguration(string path);
+  }
+
+  public class RegexDotConfiguration : IRegexDotConfiguration {
     public event Action<FileSystemEventArgs> ConfigReloaded = delegate { };
     public event Action<FileSystemEventArgs, Exception> ConfigFaulted = delegate { };
 

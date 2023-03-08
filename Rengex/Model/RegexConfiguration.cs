@@ -98,28 +98,28 @@ namespace Rengex.Model {
 
     private IEnumerable<TextSpan> Matches(string input, Regex rule) {
       foreach (Match m in rule.Matches(input)) {
-        foreach (TextSpan span in Match(m)) {
+        foreach (var span in Match(m)) {
           yield return span;
         }
       }
     }
 
     private IEnumerable<TextSpan> Match(Match m) {
-      IEnumerable<(Group, Capture)> captures = AllCapturesOrderByIdx(m);
+      var captures = AllCapturesOrderByIdx(m);
       foreach (var (group, capture) in captures) {
         if (group.Name.EndsWith("CC")) {
           string proc = group.Name[0..^2] + 'F';
-          IEnumerable<TextSpan> spans = Matches(capture.Value, Procedures[proc]);
-          foreach (TextSpan span in spans) {
+          var spans = Matches(capture.Value, Procedures[proc]);
+          foreach (var span in spans) {
             span.Offset += capture.Index;
             yield return span;
           }
         }
         else if (group.Name.EndsWith("C")) {
           string proc = group.Name[0..^1] + 'F';
-          Match mch = Procedures[proc].Match(capture.Value);
-          IEnumerable<TextSpan> spans = Match(mch);
-          foreach (TextSpan span in spans) {
+          var mch = Procedures[proc].Match(capture.Value);
+          var spans = Match(mch);
+          foreach (var span in spans) {
             span.Offset += capture.Index;
             yield return span;
           }
@@ -144,7 +144,7 @@ namespace Rengex.Model {
     private Dictionary<string, Regex> GetProcedures(string pat) {
       var dict = new Dictionary<string, Regex>();
       string p = pat;
-      for (int idx = 0; RxProcGroup.Match(p, idx, out Match m); idx = m.Index + 1) {
+      for (int idx = 0; RxProcGroup.Match(p, idx, out var m); idx = m.Index + 1) {
         string name = m.Groups["1"].Value;
         string value = m.Groups["2"].Value;
         try {
@@ -285,7 +285,7 @@ namespace Rengex.Model {
       }
 
       private ReplaceConfig GetConfig() {
-        ReplaceConfig cfg = Includer.ConfigResolver(FullPath);
+        var cfg = Includer.ConfigResolver(FullPath);
         if (cfg == null) {
           string name = Path.GetFileName(FullPath);
           throw new ApplicationException($"{name}를 찾을 수 없습니다");
@@ -324,7 +324,7 @@ namespace Rengex.Model {
 
     public string PreReplaceInternal(string meta, string src) {
       string ret = src;
-      foreach (IReplacer rule in Replacers) {
+      foreach (var rule in Replacers) {
         ret = rule.Preprocess(meta, ret);
       }
       return ret;
@@ -343,7 +343,7 @@ namespace Rengex.Model {
 
     private string PostReplaceInternal(string meta, string trans) {
       string ret = trans;
-      foreach (IReplacer rule in Replacers) {
+      foreach (var rule in Replacers) {
         ret = rule.Postprocess(meta, ret);
       }
       return ret;
@@ -369,12 +369,12 @@ namespace Rengex.Model {
           if (IsCommentLine(Lines.Current)) {
             continue;
           }
-          Import? import = ReadImportLine();
+          var import = ReadImportLine();
           if (import != null) {
             rules.Add(import);
           }
           else {
-            IReplacer rule = ReadPatternLines();
+            var rule = ReadPatternLines();
             rules.Add(rule);
           }
         }
@@ -404,7 +404,7 @@ namespace Rengex.Model {
         bool isPrePattern = patLine.StartsWith("(?=)", StringComparison.Ordinal);
         string pat = isPrePattern ? patLine[4..] : patLine;
         var rp = new ReplacePattern(pat, Lines.Current);
-        IReplacer? rule = isPrePattern
+        var rule = isPrePattern
           ? new PreprocessPattern(rp) as IReplacer
           : new PostprocessPattern(rp);
         return rule;

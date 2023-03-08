@@ -64,7 +64,7 @@ namespace Rengex {
     }
 
     private static string GetEllipsisPath(TranslationUnit unit) {
-      return Util.GetEllipsisPath(unit.Workspace.RelativePath, 30);
+      return Util.GetEllipsisPath(unit.ManagedPath.RelativePath, 30);
     }
 
     public string EllipsisPath { get; private set; }

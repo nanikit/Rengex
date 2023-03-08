@@ -1,57 +1,73 @@
 namespace Rengex.Tests {
+  using Microsoft.VisualStudio.TestTools.UnitTesting;
   using Rengex.Model;
-  using Xunit;
 
+  [TestClass]
   public class ManagedPathTest {
-    private readonly ManagedPath external = new ManagedPath(@"D:\some\other\file.json", root: @"D:\some");
-    private readonly ManagedPath imported = new ManagedPath(@"rengex\1_source\001.tran.txt");
-    private readonly ManagedPath meta = new ManagedPath(@"rengex\2_meta\001.tran.txt.meta.txt");
-    private readonly ManagedPath translated = new ManagedPath(@"rengex\3_translation\001.tran.txt.tran.txt");
-    private readonly ManagedPath resulted = new ManagedPath(@"rengex\4_result\001.tran.txt");
-
-    [Fact]
+    [TestMethod]
     public void TestExternalPath() {
-      Assert.Equal(@"other\file.json", external.RelativePath);
-      Assert.Equal(@"rengex\1_source\other\file.json", external.SourcePath);
-      Assert.Equal(@"rengex\2_meta\other\file.json.meta.txt", external.MetadataPath);
-      Assert.Equal(@"rengex\3_translation\other\file.json.tran.txt", external.TranslationPath);
-      Assert.Equal(@"rengex\4_result\other\file.json", external.DestinationPath);
+      var external = new ManagedPath(@"D:\some\other\file.json", root: @"D:\some");
+      Assert.AreEqual(@"other\file.json", external.RelativePath);
+      Assert.AreEqual(@"rengex\1_original\other\file.json", external.OriginalPath);
+      Assert.AreEqual(@"rengex\2_meta\other\file.json.meta.txt", external.MetadataPath);
+      Assert.AreEqual(@"rengex\3_source\other\file.json.txt", external.SourcePath);
+      Assert.AreEqual(@"rengex\4_target\other\file.json.txt", external.TargetPath);
+      Assert.AreEqual(@"rengex\5_result\other\file.json", external.ResultPath);
     }
 
-    [Fact]
-    public void TestImportedPath() {
-      Assert.Equal(@"001.tran.txt", imported.RelativePath);
-      Assert.Equal(@"rengex\1_source\001.tran.txt", imported.SourcePath);
-      Assert.Equal(@"rengex\2_meta\001.tran.txt.meta.txt", imported.MetadataPath);
-      Assert.Equal(@"rengex\3_translation\001.tran.txt.tran.txt", imported.TranslationPath);
-      Assert.Equal(@"rengex\4_result\001.tran.txt", imported.DestinationPath);
+    [TestMethod]
+    public void TestOriginalPath() {
+      var imported = new ManagedPath(@"rengex\1_original\001.txt");
+      Assert.AreEqual(@"001.txt", imported.RelativePath);
+      Assert.AreEqual(@"rengex\1_original\001.txt", imported.OriginalPath);
+      Assert.AreEqual(@"rengex\2_meta\001.txt.meta.txt", imported.MetadataPath);
+      Assert.AreEqual(@"rengex\3_source\001.txt.txt", imported.SourcePath);
+      Assert.AreEqual(@"rengex\4_target\001.txt.txt", imported.TargetPath);
+      Assert.AreEqual(@"rengex\5_result\001.txt", imported.ResultPath);
     }
 
-    [Fact]
+    [TestMethod]
     public void TestMetaPath() {
-      Assert.Equal(@"001.tran.txt", meta.RelativePath);
-      Assert.Equal(@"rengex\1_source\001.tran.txt", meta.SourcePath);
-      Assert.Equal(@"rengex\2_meta\001.tran.txt.meta.txt", meta.MetadataPath);
-      Assert.Equal(@"rengex\3_translation\001.tran.txt.tran.txt", meta.TranslationPath);
-      Assert.Equal(@"rengex\4_result\001.tran.txt", meta.DestinationPath);
+      var meta = new ManagedPath(@"rengex\2_meta\001.txt.meta.txt");
+      Assert.AreEqual(@"001.txt", meta.RelativePath);
+      Assert.AreEqual(@"rengex\1_original\001.txt", meta.OriginalPath);
+      Assert.AreEqual(@"rengex\2_meta\001.txt.meta.txt", meta.MetadataPath);
+      Assert.AreEqual(@"rengex\3_source\001.txt.txt", meta.SourcePath);
+      Assert.AreEqual(@"rengex\4_target\001.txt.txt", meta.TargetPath);
+      Assert.AreEqual(@"rengex\5_result\001.txt", meta.ResultPath);
     }
 
-    [Fact]
-    public void TestTranslatedPath() {
-      Assert.Equal(@"001.tran.txt", translated.RelativePath);
-      Assert.Equal(@"rengex\1_source\001.tran.txt", translated.SourcePath);
-      Assert.Equal(@"rengex\2_meta\001.tran.txt.meta.txt", translated.MetadataPath);
-      Assert.Equal(@"rengex\3_translation\001.tran.txt.tran.txt", translated.TranslationPath);
-      Assert.Equal(@"rengex\4_result\001.tran.txt", translated.DestinationPath);
+    [TestMethod]
+    public void TestSourcePath() {
+      var source = new ManagedPath(@"rengex\3_source\001.txt.txt");
+      Assert.AreEqual(@"001.txt", source.RelativePath);
+      Assert.AreEqual(@"rengex\1_original\001.txt", source.OriginalPath);
+      Assert.AreEqual(@"rengex\2_meta\001.txt.meta.txt", source.MetadataPath);
+      Assert.AreEqual(@"rengex\3_source\001.txt.txt", source.SourcePath);
+      Assert.AreEqual(@"rengex\4_target\001.txt.txt", source.TargetPath);
+      Assert.AreEqual(@"rengex\5_result\001.txt", source.ResultPath);
     }
 
-    [Fact]
+    [TestMethod]
+    public void TestTargetPath() {
+      var target = new ManagedPath(@"rengex\4_target\001.txt.txt");
+      Assert.AreEqual(@"001.txt", target.RelativePath);
+      Assert.AreEqual(@"rengex\1_original\001.txt", target.OriginalPath);
+      Assert.AreEqual(@"rengex\2_meta\001.txt.meta.txt", target.MetadataPath);
+      Assert.AreEqual(@"rengex\3_source\001.txt.txt", target.SourcePath);
+      Assert.AreEqual(@"rengex\4_target\001.txt.txt", target.TargetPath);
+      Assert.AreEqual(@"rengex\5_result\001.txt", target.ResultPath);
+    }
+
+    [TestMethod]
     public void TestResultPath() {
-      Assert.Equal(@"001.tran.txt", resulted.RelativePath);
-      Assert.Equal(@"rengex\1_source\001.tran.txt", resulted.SourcePath);
-      Assert.Equal(@"rengex\2_meta\001.tran.txt.meta.txt", resulted.MetadataPath);
-      Assert.Equal(@"rengex\3_translation\001.tran.txt.tran.txt", resulted.TranslationPath);
-      Assert.Equal(@"rengex\4_result\001.tran.txt", resulted.DestinationPath);
+      var result = new ManagedPath(@"rengex\5_result\001.txt");
+      Assert.AreEqual(@"001.txt", result.RelativePath);
+      Assert.AreEqual(@"rengex\1_original\001.txt", result.OriginalPath);
+      Assert.AreEqual(@"rengex\2_meta\001.txt.meta.txt", result.MetadataPath);
+      Assert.AreEqual(@"rengex\3_source\001.txt.txt", result.SourcePath);
+      Assert.AreEqual(@"rengex\4_target\001.txt.txt", result.TargetPath);
+      Assert.AreEqual(@"rengex\5_result\001.txt", result.ResultPath);
     }
   }
 }

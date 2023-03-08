@@ -10,22 +10,24 @@ namespace Rengex.Model {
   public class ManagedPath {
 
     public const string ProjectDirectory = "rengex";
-    public static readonly string SourceDirectory = Path.Combine(ProjectDirectory, SourceName);
+    public static readonly string OriginalDirectory = Path.Combine(ProjectDirectory, OriginalName);
     public static readonly string MetadataDirectory = Path.Combine(ProjectDirectory, MetadataName);
-    public static readonly string TranslationDirectory = Path.Combine(ProjectDirectory, TranslationName);
-    public static readonly string DestinationDirectory = Path.Combine(ProjectDirectory, DestinationName);
+    public static readonly string SourceDirectory = Path.Combine(ProjectDirectory, SourceName);
+    public static readonly string TargetDirectory = Path.Combine(ProjectDirectory, TargetName);
+    public static readonly string ResultDirectory = Path.Combine(ProjectDirectory, ResultName);
 
-    private const string SourceName = "1_source";
+    private const string OriginalName = "1_original";
     private const string MetadataName = "2_meta";
-    private const string TranslationName = "3_translation";
-    private const string DestinationName = "4_result";
+    private const string SourceName = "3_source";
+    private const string TargetName = "4_target";
+    private const string ResultName = "5_result";
 
     #region Fields and properties (mainly for path)
 
     /// <summary>
     /// 원본 파일 절대 경로
     /// </summary>
-    public string? OriginalPath { get; private set; }
+    public string? ExternalPath { get; private set; }
     /// <summary>
     /// 프로젝트 내에서의 상대 경로
     /// </summary>
@@ -38,24 +40,28 @@ namespace Rengex.Model {
     /// <summary>
     /// 프로젝트 폴더 안에 복사한 원본 파일 경로.
     /// </summary>
-    public string SourcePath => Path.Combine(SourceDirectory, RelativePath);
+    public string OriginalPath => Path.Combine(OriginalDirectory, RelativePath);
     /// <summary>
     /// 메타데이터 파일 경로.
     /// </summary>
     public string MetadataPath => Path.Combine(MetadataDirectory, $"{RelativePath}.meta.txt");
     /// <summary>
-    /// 번역작업 파일 경로.
+    /// 시작어 파일 경로.
     /// </summary>
-    public string TranslationPath => Path.Combine(TranslationDirectory, $"{RelativePath}.tran.txt");
+    public string SourcePath => Path.Combine(SourceDirectory, $"{RelativePath}.txt");
+    /// <summary>
+    /// 도착어 파일 경로.
+    /// </summary>
+    public string TargetPath => Path.Combine(TargetDirectory, $"{RelativePath}.txt");
     /// <summary>
     /// 결과 파일 경로.
     /// </summary>
-    public string DestinationPath => Path.Combine(DestinationDirectory, RelativePath);
+    public string ResultPath => Path.Combine(ResultDirectory, RelativePath);
 
     public bool IsInProject {
       get {
         string projectPath = $"{ProjectPath}{Path.DirectorySeparatorChar}";
-        return OriginalPath?.StartsWith(projectPath, StringComparison.OrdinalIgnoreCase) ?? true;
+        return ExternalPath?.StartsWith(projectPath, StringComparison.OrdinalIgnoreCase) ?? true;
       }
     }
 
@@ -68,19 +74,19 @@ namespace Rengex.Model {
     /// <param name="projectPath">Project root path.</param>
     /// <param name="root">Original file's anchor path deriving relative path.</param>
     public ManagedPath(string originalPath, string? root = null) {
-      OriginalPath = Path.GetFullPath(originalPath);
+      ExternalPath = Path.GetFullPath(originalPath);
       ProjectPath = Path.GetFullPath(ProjectDirectory);
 
       if (IsInProject) {
-        string relative = Path.GetRelativePath(ProjectPath, OriginalPath);
+        string relative = Path.GetRelativePath(ProjectPath, ExternalPath);
         relative = Regex.Replace(relative, $"^{MetadataName}\\\\(.*?)\\.meta\\.txt$", "$1");
-        relative = Regex.Replace(relative, $"^{TranslationName}\\\\(.*?)\\.tran(?:_번역)?\\.txt$", "$1");
-        relative = Regex.Replace(relative, $"^({SourceName}|{DestinationName})\\\\", "");
+        relative = Regex.Replace(relative, $"^(?:{SourceName}|{TargetName})\\\\(.*?)\\.txt$", "$1");
+        relative = Regex.Replace(relative, $"^(?:{OriginalName}|{ResultName})\\\\", "");
         RelativePath = relative == "" ? "." : relative;
       }
       else if (root != null) {
         string rootPath = Path.GetFullPath(root);
-        RelativePath = Path.GetRelativePath(rootPath, OriginalPath);
+        RelativePath = Path.GetRelativePath(rootPath, ExternalPath);
         if (RelativePath.Contains("..\\")) {
           throw new RengexException("Incorrect file anchor.");
         }
@@ -94,7 +100,7 @@ namespace Rengex.Model {
       var units = new List<ManagedPath>();
       string parent = Path.GetDirectoryName(path)!;
       if (Directory.Exists(path)) {
-        IEnumerable<string>? files = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories);
+        var files = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories);
         foreach (string file in files) {
           if (!IsConfigFile(file)) {
             units.Add(new ManagedPath(file, parent));
@@ -108,8 +114,8 @@ namespace Rengex.Model {
     }
 
     public Task CopyToSourceDirectory() {
-      _ = Util.PrecreateDirectory(SourcePath);
-      return Util.CopyFileAsync(OriginalPath!, SourcePath);
+      _ = Util.PrecreateDirectory(OriginalPath);
+      return Util.CopyFileAsync(ExternalPath!, OriginalPath);
     }
 
     private static bool IsConfigFile(string file) {
