@@ -140,7 +140,7 @@ namespace Rengex.Helper {
     private readonly TextReader _base;
     private char[] _buffer;
 
-    public CharCountingReader(TextReader reader, char[] buffer = null) {
+    public CharCountingReader(TextReader reader, char[]? buffer = null) {
       _base = reader;
       _buffer = buffer ?? new char[2048];
     }
@@ -161,7 +161,7 @@ namespace Rengex.Helper {
       return totalRead;
     }
 
-    public async Task<string?> ReadString(int length) {
+    public async Task<string?> ReadStringAsync(int length) {
       if (_buffer.Length < length) {
         _buffer = new char[length];
       }
@@ -174,7 +174,7 @@ namespace Rengex.Helper {
   }
 
   class StringWithCodePage {
-    public static bool ReadAllTextAutoDetect(string path, out StringWithCodePage guessed) {
+    public static async Task<(string Text, Encoding Encoding)?> ReadAllTextWithDetectionAsync(Stream stream) {
       string[] encodingNames = new string[] {
         "utf-8",
         "shift_jis",
@@ -182,18 +182,18 @@ namespace Rengex.Helper {
         "utf-16",
         "unicodeFFFE",
       };
-      var efall = EncoderFallback.ExceptionFallback;
-      var dfall = DecoderFallback.ExceptionFallback;
-      guessed = null;
+      var encoderFallback = EncoderFallback.ExceptionFallback;
+      var decoderFallback = DecoderFallback.ExceptionFallback;
       foreach (string name in encodingNames) {
         try {
-          var enc = Encoding.GetEncoding(name, efall, dfall);
-          guessed = new StringWithCodePage(File.ReadAllText(path, enc), enc);
-          return true;
+          var encoding = Encoding.GetEncoding(name, encoderFallback, decoderFallback);
+          using var reader = new StreamReader(stream, encoding);
+          string text = await reader.ReadToEndAsync().ConfigureAwait(false);
+          return (text, reader.CurrentEncoding);
         }
         catch (DecoderFallbackException) { }
       }
-      return false;
+      return null;
     }
 
     public string Content { get; set; }

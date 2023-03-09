@@ -175,7 +175,7 @@ namespace Rengex.Model {
     public Func<string, MatchConfig> ConfigResolver { set { } }
 
     public MatchConfig() {
-      Matcher = new ExtendedMatcher(@"[^0]*", Timeout);
+      Matcher = new ExtendedMatcher(@"(?<text>.*)", Timeout);
     }
 
     public MatchConfig(string path) {

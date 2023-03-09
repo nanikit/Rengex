@@ -8,10 +8,10 @@ namespace Rengex.Model {
   /// State
   /// </summary>
   sealed class MetadataCsvReader : IDisposable {
-    readonly StreamReader Base;
+    readonly TextReader _base;
 
-    public MetadataCsvReader(string path) {
-      Base = new StreamReader(path);
+    public MetadataCsvReader(TextReader reader) {
+      _base = reader;
     }
 
     public IEnumerable<TextSpan> GetSpans() {
@@ -21,7 +21,7 @@ namespace Rengex.Model {
         yield break;
       }
 
-      while (!Base.EndOfStream) {
+      while (_base.Peek() != -1) {
         var next = MakeSpan();
         if (next == null) {
           sb.Append('\n');
@@ -40,7 +40,7 @@ namespace Rengex.Model {
     }
 
     private TextSpan? MakeSpan() {
-      string[] csv = (Base.ReadLine() ?? "").Split(',');
+      string[] csv = (_base.ReadLine() ?? "").Split(',');
       if (csv.Length < 1 || !int.TryParse(csv[0], out int off)) {
         return null;
       }
@@ -56,7 +56,7 @@ namespace Rengex.Model {
     }
 
     public void Dispose() {
-      Base?.Dispose();
+      _base?.Dispose();
     }
   }
 }
