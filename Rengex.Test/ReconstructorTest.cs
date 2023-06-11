@@ -1,6 +1,8 @@
 namespace Rengex.Tests {
   using Microsoft.VisualStudio.TestTools.UnitTesting;
+  using Moq;
   using Rengex.Model;
+  using Rengex.Translator;
   using System.IO;
   using System.Text;
   using System.Threading.Tasks;
@@ -28,11 +30,25 @@ namespace Rengex.Tests {
     }
 
     [TestMethod]
+    public async Task TestTranslate() {
+      var translator = new Mock<ITranslator>();
+      translator.Setup(x => x.Translate("extracted\r\n")).Returns(Task.FromResult("TRANSLATED\r\n"));
+      using var meta = new StringReader("0,11,text\n");
+      using var source = new StringReader("extracted\r\n");
+      using var target = new StringWriter();
+
+      await _reconstructor.Translate(meta, source, translator.Object, target).ConfigureAwait(false);
+
+      Assert.AreEqual("TRANSLATED\r\n", target.ToString());
+    }
+
+    [TestMethod]
     public async Task TestMerge() {
       using var original = new MemoryStream(Encoding.UTF8.GetBytes("Just sample"));
       using var meta = new StringReader("0,11,text\n");
       using var target = new StringReader("TRANSLATED\n");
       using var result = new MemoryStream();
+
       await _reconstructor.Merge(original, meta, target, result).ConfigureAwait(false);
 
       result.Position = 0;

@@ -1,4 +1,5 @@
 using Rengex.Helper;
+using Rengex.Translator;
 using System;
 using System.IO;
 using System.Text;
@@ -15,19 +16,26 @@ namespace Rengex.Model {
     public async Task Extract(Stream original, TextWriter meta, TextWriter source) {
       switch (await StringWithCodePage.ReadAllTextWithDetectionAsync(original).ConfigureAwait(false)) {
       case (string text, _):
-        foreach (var span in _configuration.Matches(text)) {
-          string value = span.Value;
-          string newLines = new('\n', TextUtils.CountLines(value));
-          await meta.WriteLineAsync($"{span.Offset},{span.Length},{span.Title}{newLines}").ConfigureAwait(false);
-
-          string preprocessed = _configuration.PreReplace(span.Title, value);
-          await source.WriteLineAsync(preprocessed).ConfigureAwait(false);
-        }
+        await ExtractFromString(meta, source, text).ConfigureAwait(false);
         break;
       case null:
         // TODO: UI message
         break;
       }
+    }
+
+    public async Task Translate(TextReader meta, TextReader source, ITranslator translator, TextWriter target) {
+      var preprocessed = new StringBuilder();
+      using var metaReader = new MetadataCsvReader(meta);
+      var substitution = new SpanPairReader(source);
+      foreach (var span in metaReader.GetSpans()) {
+        string extracted = substitution.ReadCorrespondingSpan(span);
+        string replaced = _configuration.PreReplace(span.Title ?? "", extracted);
+        preprocessed.AppendLine(replaced);
+      }
+
+      string translated = await translator.Translate(preprocessed.ToString()).ConfigureAwait(false);
+      await target.WriteAsync(translated).ConfigureAwait(false);
     }
 
     public async Task Merge(Stream original, TextReader meta, TextReader target, Stream result) {
@@ -42,6 +50,32 @@ namespace Rengex.Model {
         await original.CopyToAsync(result).ConfigureAwait(false);
         return;
       }
+    }
+
+    private async Task ExtractFromString(TextWriter meta, TextWriter source, string text) {
+      var metaWrite = ValueTask.CompletedTask;
+      var sourceWrite = ValueTask.CompletedTask;
+
+      async ValueTask ChainMeta(string line) {
+        await metaWrite.ConfigureAwait(false);
+        await meta.WriteLineAsync(line).ConfigureAwait(false);
+      }
+
+      async ValueTask ChainSource(string line) {
+        await sourceWrite.ConfigureAwait(false);
+        await source.WriteLineAsync(line).ConfigureAwait(false);
+      }
+
+      foreach (var span in _configuration.Matches(text)) {
+        string value = span.Value;
+        string newLines = new('\n', TextUtils.CountLines(value));
+
+        metaWrite = ChainMeta($"{span.Offset},{span.Length},{span.Title}{newLines}");
+        sourceWrite = ChainSource(value);
+      }
+
+      await metaWrite.ConfigureAwait(false);
+      await sourceWrite.ConfigureAwait(false);
     }
 
     private async Task CompileTranslation(string original, MetadataCsvReader meta, TextReader target, TextWriter result) {

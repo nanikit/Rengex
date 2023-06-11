@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -27,13 +27,13 @@ namespace Rengex.Translator {
     public async Task<string> Translate(string source) {
       Logger?.OnStart(source.Length);
 
-      List<string> splits = ChunkByLines(source).ToList();
-      List<Task<string>> splitTasks = splits.Select(Backend.Translate).ToList();
+      var splits = ChunkByLines(source).ToList();
+      var splitTasks = splits.Select(Backend.Translate).ToList();
       var runnings = new List<Task<string>>(splitTasks);
       int translatedLength = 0;
 
       while (runnings.Count != 0) {
-        Task<string> done = await Task.WhenAny(runnings).ConfigureAwait(false);
+        var done = await Task.WhenAny(runnings).ConfigureAwait(false);
         runnings.Remove(done);
 
         int doneIdx = splitTasks.IndexOf(done);
@@ -57,7 +57,7 @@ namespace Rengex.Translator {
       int endIdx = 0;
       while (true) {
         if (endIdx >= source.Length) {
-          yield return source.Substring(startIdx, endIdx - startIdx);
+          yield return source[startIdx..endIdx];
           break;
         }
         if (source[endIdx] == '\n') {

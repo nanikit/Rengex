@@ -35,10 +35,11 @@ namespace Rengex.Model {
         return;
       }
 
-      string jp = await File.ReadAllTextAsync(ManagedPath.SourcePath).ConfigureAwait(false);
-      string kr = await translator.Translate(jp).ConfigureAwait(false);
-      string targetPath = Util.PrecreateDirectory(ManagedPath.TargetPath);
-      await File.WriteAllTextAsync(targetPath, kr).ConfigureAwait(false);
+      using var meta = File.OpenText(ManagedPath.MetadataPath);
+      using var jp = File.OpenText(ManagedPath.SourcePath);
+      using var kr = File.CreateText(Util.PrecreateDirectory(ManagedPath.TargetPath));
+      var reconstructor = new Reconstructor(DotConfig.GetConfiguration(ManagedPath.OriginalPath));
+      await reconstructor.Translate(meta, jp, translator, kr).ConfigureAwait(false);
     }
 
     public async Task BuildTranslation() {
