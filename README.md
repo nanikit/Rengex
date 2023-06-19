@@ -8,10 +8,10 @@
 
 ## 설치
 
-기계 번역 엔진으로 [Ehnd](https://github.com/sokcuri/ehnd)를 사용헙니다.
+기계 번역 엔진으로 [Ehnd](https://github.com/sokcuri/ehnd)를 사용합니다.
 사용 전에 [개조 Ehnd를 설치](https://m.blog.naver.com/waltherp38/221062272423)해주세요.
 
-[32비트 .NET 7](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-7.0.1-windows-x86-installer)를 추가로 설치해주세요.
+[32비트 .NET 7](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-7.0.7-windows-x86-installer)를 추가로 설치해주세요.
 
 ## 텍스트 파일 번역법
 
