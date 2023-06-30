@@ -64,7 +64,7 @@ namespace Rengex.Translator {
     // Ehnd delete all and recreate temporary dictionary file,
     // so parallel initialization is dangerous.
     private static async Task DelayForEhndInitialization() {
-      var delay = _lastSpawnTime.AddSeconds(1) - DateTime.Now;
+      var delay = _lastSpawnTime.AddSeconds(5) - DateTime.Now;
       int milliseconds = (int)Math.Max(0, delay.TotalMilliseconds);
       await Task.Delay(milliseconds).ConfigureAwait(false);
     }
