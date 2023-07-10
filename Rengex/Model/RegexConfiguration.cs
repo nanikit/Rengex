@@ -211,7 +211,7 @@ namespace Rengex.Model {
       string Postprocess(string meta, string trans);
     }
 
-    class ReplacePattern {
+    internal class ReplacePattern {
       public readonly Regex Original;
       public readonly string Replace;
       public readonly bool Extended;
@@ -229,7 +229,7 @@ namespace Rengex.Model {
       }
     }
 
-    class PreprocessPattern : IReplacer {
+    internal class PreprocessPattern : IReplacer {
       readonly ReplacePattern Pat;
 
       public PreprocessPattern(ReplacePattern pat) {
@@ -237,9 +237,18 @@ namespace Rengex.Model {
       }
 
       public string Preprocess(string meta, string trans) {
-        string from = Pat.Extended ? $"{trans}\0{meta}" : trans;
-        string to = Pat.Original.Replace(from, Pat.Replace);
-        return Pat.Extended ? to[..(to.Length - meta.Length - 1)] : to;
+        if (!Pat.Extended) {
+          return Pat.Original.Replace(trans, Pat.Replace);
+        }
+
+        string from = $"{trans}\0{meta}";
+        string to = Pat.Original.Replace(from, (match) => {
+          bool isStartInRange = match.Index <= trans.Length;
+          bool isEndInRange = match.Index + match.Length <= from.Length;
+          bool isInRange = isStartInRange && isEndInRange;
+          return isInRange ? match.Result(Pat.Replace) : match.Value;
+        });
+        return to[..(to.Length - meta.Length - 1)];
       }
 
       public string Postprocess(string meta, string trans) {
@@ -247,7 +256,7 @@ namespace Rengex.Model {
       }
     }
 
-    private class PostprocessPattern : IReplacer {
+    internal class PostprocessPattern : IReplacer {
       readonly ReplacePattern Pat;
 
       public PostprocessPattern(ReplacePattern pat) {
@@ -259,9 +268,18 @@ namespace Rengex.Model {
       }
 
       public string Postprocess(string meta, string trans) {
-        string from = Pat.Extended ? $"{trans}\0{meta}" : trans;
-        string to = Pat.Original.Replace(from, Pat.Replace);
-        return Pat.Extended ? to[..(to.Length - meta.Length - 1)] : to;
+        if (!Pat.Extended) {
+          return Pat.Original.Replace(trans, Pat.Replace);
+        }
+
+        string from = $"{trans}\0{meta}";
+        string to = Pat.Original.Replace(from, (match) => {
+          bool isStartInRange = match.Index <= trans.Length;
+          bool isEndInRange = match.Index + match.Length <= from.Length;
+          bool isInRange = isStartInRange && isEndInRange;
+          return isInRange ? match.Result(Pat.Replace) : match.Value;
+        });
+        return to[..(to.Length - meta.Length - 1)];
       }
     }
 
