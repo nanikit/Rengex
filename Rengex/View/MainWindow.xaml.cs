@@ -1,4 +1,4 @@
-﻿namespace Rengex.View {
+namespace Rengex.View {
   using System;
   using System.Linq;
   using System.Text;
@@ -14,9 +14,8 @@
     private readonly MainWindowVM vm;
 
     public MainWindow() {
-      string build = Properties.Resources.BuildDate;
-      string date = $"{build.Substring(2, 2)}{build.Substring(5, 2)}{build.Substring(8, 2)}";
-      AppendText($"Rengex v{date} by nanikit\n");
+      var date = Builtin.CompileTime.AddHours(-9).ToUniversalTime();
+      AppendText($"Rengex v{date:yyMMdd} by nanikit\n");
 
       vm = new MainWindowVM(logAdded: LogAdded);
       DataContext = vm;
