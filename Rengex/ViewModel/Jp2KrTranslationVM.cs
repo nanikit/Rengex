@@ -1,17 +1,17 @@
-namespace Rengex {
+using Nanikit.Ehnd;
+using Rengex.Helper;
+using Rengex.Model;
+using Rengex.Translator;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Management;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Windows.Media;
 
-  using Nanikit.Ehnd;
-  using Rengex.Helper;
-  using Rengex.Model;
-  using Rengex.Translator;
-  using System;
-  using System.Collections.Generic;
-  using System.Collections.ObjectModel;
-  using System.Linq;
-  using System.Management;
-  using System.Text.RegularExpressions;
-  using System.Threading.Tasks;
-  using System.Windows.Media;
+namespace Rengex {
 
   public class Jp2KrDesignVM : Jp2KrTranslationVM {
 
@@ -38,19 +38,19 @@ namespace Rengex {
   public class Jp2KrTranslationVM : ViewModelBase {
     private static readonly int coreCount;
 
-    private readonly RegexDotConfiguration dotConfig;
+    private readonly RegexDotConfiguration? dotConfig;
     private readonly List<TranslationUnit>? translations;
     private EhndTranslator? _selfTranslator;
     private string? workKind;
 
     static Jp2KrTranslationVM() {
-      coreCount = GetCoreCount();
+      coreCount = GetDesiredSubprocessCount();
     }
 
     /// <summary>
     /// if paths is null, search from metadata folder.
     /// </summary>
-    public Jp2KrTranslationVM(RegexDotConfiguration dot, string[]? paths = null) {
+    public Jp2KrTranslationVM(RegexDotConfiguration? dot, string[]? paths = null) {
       dotConfig = dot;
       translations = paths?.SelectMany(p => WalkForSources(p))?.ToList();
       Progress = new LabelProgressVM();
@@ -86,7 +86,7 @@ namespace Rengex {
       await ParallelForEach(genVm).ConfigureAwait(false);
     }
 
-    public async Task OnestopTranslation() {
+    public async Task OneStopTranslation() {
       workKind = "원터치: ";
       _selfTranslator ??= new EhndTranslator(Properties.Settings.Default.EzTransDir);
 
@@ -99,7 +99,7 @@ namespace Rengex {
       await ParallelForEach(genVm).ConfigureAwait(false);
     }
 
-    private static int GetCoreCount() {
+    private static int GetDesiredSubprocessCount() {
       int coreCount = 0;
       foreach (var item in new ManagementObjectSearcher("Select * from Win32_Processor").Get()) {
         string row = $"{item["NumberOfCores"]}";
@@ -107,7 +107,10 @@ namespace Rengex {
           coreCount += count;
         }
       }
-      return coreCount;
+
+      // Main process doesn't run ehnd for preventing crash.
+      int countExceptCurrentProcess = coreCount + 1;
+      return countExceptCurrentProcess;
     }
 
     private IEnumerable<TranslationUnit> FindTranslations() {
@@ -135,7 +138,7 @@ namespace Rengex {
           string msg = e is RegexMatchTimeoutException
             ? "정규식 검색이 너무 오래 걸립니다. 정규식을 점검해주세요."
             : e.Message;
-          item.SetProgress(TranslationPhase.Error, 100, msg);
+          item.SetProgress(TranslationPhase.Complete, 100, msg);
           Faults.Add(item.Progress);
           Exceptions.Add(e);
         }
@@ -149,6 +152,10 @@ namespace Rengex {
     }
 
     private IEnumerable<TranslationUnit> WalkForSources(string path) {
+      if (dotConfig == null) {
+        return Enumerable.Empty<TranslationUnit>();
+      }
+
       return ManagedPath
         .WalkForSources(path)
         .Select(x => new TranslationUnit(dotConfig, x));

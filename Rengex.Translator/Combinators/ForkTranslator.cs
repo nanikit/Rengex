@@ -1,27 +1,26 @@
+using Nanikit.Ehnd;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
+
 namespace Rengex.Translator {
 
-    using Nanikit.Ehnd;
-    using System;
-    using System.Collections.Generic;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Threading.Tasks.Dataflow;
-
   public class ForkTranslator : ITranslator {
+    private readonly ITranslator _baseTranslator;
     private readonly CancellationTokenSource _cancel = new();
     private readonly BufferBlock<Job> _jobs = new();
-    private readonly Task _managerTask;
     private readonly int _poolSize;
     private readonly List<ITranslator> _translators = new();
     private readonly List<Task> _workers = new();
+    private Task? _initialization;
     private bool _isDisposed;
-    private DateTime _lastSpawnTime;
 
     public ForkTranslator(int poolSize, ITranslator basis) {
       _poolSize = Math.Max(1, poolSize);
-      _translators.Add(basis);
-      _lastSpawnTime = DateTime.Now;
-      _managerTask = Task.Run(() => Manager());
+      _baseTranslator = basis;
+      Task.Run(() => Manager());
     }
 
     public void Dispose() {
@@ -53,6 +52,10 @@ namespace Rengex.Translator {
       }
       var job = await dispatch.ConfigureAwait(false);
       return job;
+    }
+
+    private Task Initialize() {
+      return _baseTranslator.Translate("");
     }
 
     private async Task Manager() {
@@ -129,8 +132,17 @@ namespace Rengex.Translator {
     /// </summary>
     private async Task Worker(ITranslator translator, Job job) {
       try {
+        lock (this) {
+          if (_initialization?.IsCompletedSuccessfully != true) {
+            _initialization = Initialize();
+          }
+        }
+        await _initialization.ConfigureAwait(false);
         string res = await translator.Translate(job.Source).ConfigureAwait(false);
         _ = job.Client.TrySetResult(res);
+      }
+      catch (SubprocessTerminatedException ex) {
+        _ = job.Client.TrySetException(ex);
       }
       catch (Exception exception) {
         if (exception is EhndNotFoundException) {

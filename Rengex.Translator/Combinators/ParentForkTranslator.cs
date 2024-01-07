@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
@@ -73,7 +74,12 @@ namespace Rengex.Translator {
     }
 
     private async Task<string> ReceiveTranslation() {
-      return await _pipeServer.ReadObjAsync<string>().ConfigureAwait(false);
+      try {
+        return await _pipeServer.ReadObjAsync<string>().ConfigureAwait(false);
+      }
+      catch (EndOfStreamException) {
+        throw new SubprocessTerminatedException();
+      }
     }
 
     private async Task<bool> RecreateAndConnect() {
@@ -101,5 +107,9 @@ namespace Rengex.Translator {
       await EnsureChild().ConfigureAwait(false);
       await _pipeServer.WriteObjAsync(script).ConfigureAwait(false);
     }
+  }
+
+  internal class SubprocessTerminatedException : Exception {
+    public SubprocessTerminatedException() : base("Subprocess has been terminated during translation") { }
   }
 }

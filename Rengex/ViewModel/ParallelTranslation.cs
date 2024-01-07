@@ -1,15 +1,16 @@
+using Rengex.Helper;
+using Rengex.Model;
+using Rengex.Translator;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using System.Windows.Media;
+using static Rengex.Translator.SplitTranslator;
+
 namespace Rengex {
 
-  using Rengex.Helper;
-  using Rengex.Model;
-  using Rengex.Translator;
-  using System;
-  using System.Threading.Tasks;
-  using System.Windows.Media;
-  using static Rengex.Translator.SplitTranslator;
-
   public enum TranslationPhase {
-    Init, Import, Translation, Export, Complete, Error
+    Init, Import, Translation, Export, Complete
   }
 
   public interface ILabelProgressVM {
@@ -63,34 +64,36 @@ namespace Rengex {
   }
 
   internal abstract class Jp2KrWork {
+    protected string? _error;
     protected TranslationUnit translation;
+
+    private readonly string _ellipsisPath;
 
     public Jp2KrWork(TranslationUnit translation) {
       this.translation = translation;
-      EllipsisPath = GetEllipsisPath(this.translation);
+      _ellipsisPath = GetEllipsisPath(this.translation);
       Progress = new LabelProgressVM();
       SetProgress(TranslationPhase.Init, 0);
     }
 
-    public string EllipsisPath { get; private set; }
-
     public TranslationPhase Phase { get; set; }
-
     public LabelProgressVM Progress { get; private set; }
-
-    public void Cancel() {
-    }
 
     public abstract Task Process();
 
-    public void SetProgress(TranslationPhase phase, double progress, string desc = null) {
+    public void SetError(string message) {
+      _error = message;
+      SetProgress(Phase, Progress.Value, message);
+    }
+
+    public void SetProgress(TranslationPhase phase, double progress, string? desc = null) {
       Phase = phase;
       Progress.Value = progress;
 
       string status = PhaseToString(Phase);
-      Progress.Label = $"{EllipsisPath}: {status}{desc}";
+      Progress.Label = $"{_ellipsisPath} {status}{(desc == null ? "" : $": {desc}")}";
 
-      if (Phase == TranslationPhase.Error) {
+      if (_error != null) {
         Progress.Foreground = LabelProgressVM.FgError;
       }
     }
@@ -99,10 +102,9 @@ namespace Rengex {
       return Util.GetEllipsisPath(unit.ManagedPath.RelativePath, 30);
     }
 
-    private static string PhaseToString(TranslationPhase phase) {
+    private string PhaseToString(TranslationPhase phase) {
       return phase switch {
-        TranslationPhase.Complete => "완료",
-        TranslationPhase.Error => "에러 - ",
+        TranslationPhase.Complete => _error == null ? "완료" : "에러",
         TranslationPhase.Export => "병합 중…",
         TranslationPhase.Import => "추출 중…",
         TranslationPhase.Translation => "번역 중…",
@@ -132,6 +134,10 @@ namespace Rengex {
       translator = engine;
     }
 
+    public void OnError(string message) {
+      SetError(message);
+    }
+
     public void OnProgress(int current) {
       double ratio = (double)current / translationSize;
       double val = (double.IsNaN(ratio) ? 1 : ratio) * 80 + 10;
@@ -146,7 +152,7 @@ namespace Rengex {
 
     public override async Task Process() {
       SetProgress(TranslationPhase.Import, 0);
-      await translation.ExtractSourceText();
+      await translation.ExtractSourceText().ConfigureAwait(false);
 
       SetProgress(TranslationPhase.Translation, 10);
       using (var splitter = new SplitTranslator(translator, this)) {
@@ -166,6 +172,10 @@ namespace Rengex {
 
     public TranslateJp2Kr(TranslationUnit tu, ITranslator engine) : base(tu) {
       translator = engine;
+    }
+
+    public void OnError(string message) {
+      SetError(message);
     }
 
     public void OnProgress(int current) {

@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Rengex.Translator {
@@ -22,6 +24,8 @@ namespace Rengex.Translator {
 
     public interface IJp2KrLogger {
 
+      void OnError(string message);
+
       void OnProgress(int current);
 
       void OnStart(int total);
@@ -31,6 +35,7 @@ namespace Rengex.Translator {
     /// It does nothing.
     /// </summary>
     public void Dispose() {
+      GC.SuppressFinalize(this);
     }
 
     public async Task<string> Translate(string source) {
@@ -50,8 +55,23 @@ namespace Rengex.Translator {
         Logger?.OnProgress(translatedLength);
       }
 
-      string[] results = await Task.WhenAll(splitTasks).ConfigureAwait(false);
-      return string.Join("", results);
+      try {
+        string[] result = await Task.WhenAll(splitTasks).ConfigureAwait(false);
+        return string.Concat(result);
+      }
+      catch {
+        var builder = new StringBuilder(source.Length);
+        for (int i = 0; i < splits.Count; i++) {
+          if (splitTasks[i].IsCompletedSuccessfully) {
+            builder.Append(splitTasks[i].Result);
+          }
+          else {
+            string emptyLines = new('\n', StringUtils.CountLines(splits[i]));
+            builder.Append(emptyLines);
+          }
+        }
+        return builder.ToString();
+      }
     }
 
     // TODO: improve readability

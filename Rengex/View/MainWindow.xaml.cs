@@ -36,15 +36,16 @@ namespace Rengex.View {
       }
     }
 
-    private void AppendException(Exception e, string info = null) {
+    private void AppendException(Exception e, string? info = null) {
       WithAutoScroll(() => {
         TbLog.AppendText($"오류: {info ?? e.Message}");
         var r = new Run($"\r\n{e}") {
           FontSize = 1
         };
-        var lastPara = TbLog.Document.Blocks.LastBlock as Paragraph;
-        lastPara.Inlines.Add(new Span(r));
-        lastPara.Inlines.Add(new Run("\r\n"));
+        if (TbLog.Document.Blocks.LastBlock is Paragraph lastParagraph) {
+          lastParagraph.Inlines.Add(new Span(r));
+          lastParagraph.Inlines.Add(new Run("\r\n"));
+        }
       });
     }
 
@@ -66,15 +67,15 @@ namespace Rengex.View {
 
     private void CopyTextCommand(object sender, ExecutedRoutedEventArgs ea) {
       const LogicalDirection forward = LogicalDirection.Forward;
-      TextSelection selection = TbLog.Selection;
-      TextPointer navigator = selection.Start.GetPositionAtOffset(0, forward);
-      TextPointer end = selection.End;
+      var selection = TbLog.Selection;
+      var navigator = selection.Start.GetPositionAtOffset(0, forward);
+      var end = selection.End;
       var buffer = new StringBuilder();
 
       int offsetToEnd;
       do {
         offsetToEnd = navigator.GetOffsetToPosition(end);
-        TextPointerContext context = navigator.GetPointerContext(forward);
+        var context = navigator.GetPointerContext(forward);
         if (context == TextPointerContext.Text) {
           string blockText = navigator.GetTextInRun(forward);
           int croppedLen = Math.Min(offsetToEnd, navigator.GetTextRunLength(forward));
@@ -91,8 +92,8 @@ namespace Rengex.View {
           block.Child is WorkProgress progress &&
           progress.DataContext is Jp2KrTranslationVM work
         ) {
-          foreach (Exception e in work.Exceptions) {
-            _ = buffer.AppendLine(e.ToString());
+          foreach (var exception in work.Exceptions) {
+            _ = buffer.AppendLine(exception.ToString());
             _ = buffer.AppendLine();
           }
         }

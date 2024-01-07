@@ -1,20 +1,19 @@
+using Microsoft.Win32;
+using Nanikit.Ehnd;
+using Rengex.Helper;
+using Rengex.Model;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+
 namespace Rengex.View {
 
-  using Microsoft.Win32;
-  using Nanikit.Ehnd;
-  using Rengex;
-  using Rengex.Helper;
-  using Rengex.Model;
-  using System;
-  using System.IO;
-  using System.Threading.Tasks;
-  using System.Windows.Data;
-  using System.Windows.Input;
-  using System.Windows.Markup;
-  using System.Windows.Media;
-
   public enum Operation {
-    None, Import, Translate, Export, Onestop
+    None, Import, Translate, Export, OneStop
   }
 
   public class AzureIfEqualConverter : MarkupExtension, IValueConverter {
@@ -47,7 +46,7 @@ namespace Rengex.View {
 
     public MainWindowVM(Action<object>? logAdded = null) {
       LogAdded += logAdded;
-      DefaultOperation = Operation.Onestop;
+      DefaultOperation = Operation.OneStop;
       OperateCommand = new RelayCommand<Operation>(RunOperation);
       PinCommand = new RelayCommand<Operation>(PinAction);
       dotConfig = EnsureConfiguration();
@@ -70,7 +69,7 @@ namespace Rengex.View {
       }
     }
 
-    public void RunDefaultOperation(string[] paths) {
+    public void RunDefaultOperation(string[]? paths) {
       this.paths = paths;
       RunOperation(DefaultOperation);
     }
@@ -135,7 +134,7 @@ namespace Rengex.View {
 
     private async Task LoopIfEztransNotFound(Func<Jp2KrTranslationVM, Task> tasker) {
       while (true) {
-        Task ongoing = tasker(translator);
+        var ongoing = tasker(translator);
         try {
           await ongoing.ConfigureAwait(false);
           Log("작업이 끝났습니다.\r\n");
@@ -147,18 +146,18 @@ namespace Rengex.View {
             return;
           }
 
-          Properties.Settings? settings = Properties.Settings.Default;
+          var settings = Properties.Settings.Default;
           settings.EzTransDir = ezDir;
           settings.Save();
 
-          Task retry = Operate(tasker);
+          var retry = Operate(tasker);
           await retry.ConfigureAwait(false);
         }
       }
     }
 
-    private void Onestop() {
-      _ = Operate(tvm => tvm.OnestopTranslation());
+    private void OneStop() {
+      _ = Operate(tvm => tvm.OneStopTranslation());
     }
 
     private async Task Operate(Func<Jp2KrTranslationVM, Task> tasker) {
@@ -205,8 +204,8 @@ namespace Rengex.View {
         Export();
         break;
 
-      case Operation.Onestop:
-        Onestop();
+      case Operation.OneStop:
+        OneStop();
         break;
 
       case Operation.None:
