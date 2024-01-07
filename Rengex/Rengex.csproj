@@ -13,8 +13,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Nanikit.Ehnd" Version="3.0.0" />
-    <PackageReference Include="System.Management" Version="7.0.0" />
+    <PackageReference Include="Nanikit.Ehnd" Version="3.1.0" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,10 +49,7 @@
   </ItemGroup>
 
   <Target Name="Date" BeforeTargets="BeforeBuild">
-    <WriteLinesToFile File="$(IntermediateOutputPath)gen.cs" Lines="
-static partial class Builtin {
-  public static System.DateTime CompileTime = System.DateTime.FromFileTimeUtc($([System.DateTime]::Now.ToFileTimeUtc()))%3B
-}" Overwrite="true" />
+    <WriteLinesToFile File="$(IntermediateOutputPath)gen.cs" Lines="&#xD;&#xA;static partial class Builtin {&#xD;&#xA;  public static System.DateTime CompileTime = System.DateTime.FromFileTimeUtc($([System.DateTime]::Now.ToFileTimeUtc()))%3B&#xD;&#xA;}" Overwrite="true" />
   </Target>
   <ItemGroup>
     <Compile Include="$(IntermediateOutputPath)gen.cs" />
