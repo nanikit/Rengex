@@ -1,4 +1,5 @@
 namespace Rengex.Tests {
+
   using Microsoft.VisualStudio.TestTools.UnitTesting;
   using Moq;
   using Rengex.Model;
@@ -30,19 +31,6 @@ namespace Rengex.Tests {
     }
 
     [TestMethod]
-    public async Task TestTranslate() {
-      var translator = new Mock<ITranslator>();
-      translator.Setup(x => x.Translate("extracted\r\n")).Returns(Task.FromResult("TRANSLATED\r\n"));
-      using var meta = new StringReader("0,11,text\n");
-      using var source = new StringReader("extracted\r\n");
-      using var target = new StringWriter();
-
-      await _reconstructor.Translate(meta, source, translator.Object, target).ConfigureAwait(false);
-
-      Assert.AreEqual("TRANSLATED\r\n", target.ToString());
-    }
-
-    [TestMethod]
     public async Task TestMerge() {
       using var original = new MemoryStream(Encoding.UTF8.GetBytes("Just sample"));
       using var meta = new StringReader("0,11,text\n");
@@ -54,6 +42,19 @@ namespace Rengex.Tests {
       result.Position = 0;
       string resultContent = new StreamReader(result).ReadToEnd();
       Assert.AreEqual("TRANSLATED\n", resultContent);
+    }
+
+    [TestMethod]
+    public async Task TestTranslate() {
+      var translator = new Mock<ITranslator>();
+      translator.Setup(x => x.Translate("extracted\r\n")).Returns(Task.FromResult("TRANSLATED\r\n"));
+      using var meta = new StringReader("0,11,text\n");
+      using var source = new StringReader("extracted\r\n");
+      using var target = new StringWriter();
+
+      await _reconstructor.Translate(meta, source, translator.Object, target).ConfigureAwait(false);
+
+      Assert.AreEqual("TRANSLATED\r\n", target.ToString());
     }
   }
 }

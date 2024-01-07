@@ -1,9 +1,9 @@
+using Rengex.Helper;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Rengex.Helper;
 
 namespace Rengex.Model {
 
@@ -20,22 +20,269 @@ namespace Rengex.Model {
       return Matcher.Matches(input);
     }
 
+    public string PostReplace(string name, string src, string trans) {
+      return Replacer.PostReplace(name, src, trans);
+    }
+
     public string PreReplace(string name, string trans) {
       return Replacer.PreReplace(name, trans);
     }
+  }
 
+  /// <summary>
+  /// 번역 전, 후 치환 규칙 설정을 담당하는 클래스
+  /// </summary>
+  public class ReplaceConfig : IDotConfig<ReplaceConfig> {
+    public static readonly string Extension = ".repla.txt";
+
+    private readonly string FullPath;
+
+    private readonly List<IReplacer> Replacers;
+
+    private Func<string, ReplaceConfig> ConfigResolver;
+
+    public ReplaceConfig() {
+      Replacers = new List<IReplacer>();
+    }
+
+    public ReplaceConfig(string replaceConfigPath) {
+      FullPath = Path.GetFullPath(replaceConfigPath);
+      Replacers = new ReplaceConfigLoader(this).Rules;
+    }
+
+    private interface IReplacer {
+
+      string Postprocess(string meta, string trans);
+
+      string Preprocess(string meta, string trans);
+    }
+
+    Func<string, ReplaceConfig> IDotConfig<ReplaceConfig>.ConfigResolver {
+      set { ConfigResolver = value; }
+    }
+
+    public ReplaceConfig CreateFromFile(string path) {
+      return new ReplaceConfig(path);
+    }
+
+    public string GetDefaultConfig() {
+      return Properties.Resources.DefaultReplace;
+    }
+
+    public string GetExtension() {
+      return Extension;
+    }
+
+    /// <summary>
+    /// 번역 후처리. 원문첨부 매칭을 위해 원문도 필요.
+    /// </summary>
+    /// <param name="name">매칭 그룹 이름</param>
+    /// <param name="src">번역 전 원문</param>
+    /// <param name="trans">번역 후 문자열</param>
+    /// <returns>최종 문자열</returns>
     public string PostReplace(string name, string src, string trans) {
-      return Replacer.PostReplace(name, src, trans);
+      return PostReplaceInternal($"{src}\0{name}", trans);
+    }
+
+    /// <summary>
+    /// 번역 전처리
+    /// </summary>
+    /// <param name="name">매칭 그룹 이름</param>
+    /// <param name="src">번역 전 원문</param>
+    /// <returns>전처리된 문자열</returns>
+    public string PreReplace(string name, string src) {
+      return PreReplaceInternal(name, src);
+    }
+
+    public string PreReplaceInternal(string meta, string src) {
+      string ret = src;
+      foreach (var rule in Replacers) {
+        ret = rule.Preprocess(meta, ret);
+      }
+      return ret;
+    }
+
+    private string PostReplaceInternal(string meta, string trans) {
+      string ret = trans;
+      foreach (var rule in Replacers) {
+        ret = rule.Postprocess(meta, ret);
+      }
+      return ret;
+    }
+
+    internal class PostprocessPattern : IReplacer {
+      private readonly ReplacePattern Pat;
+
+      public PostprocessPattern(ReplacePattern pat) {
+        Pat = pat;
+      }
+
+      public string Postprocess(string meta, string trans) {
+        if (!Pat.Extended) {
+          return Pat.Original.Replace(trans, Pat.Replace);
+        }
+
+        string from = $"{trans}\0{meta}";
+        string to = Pat.Original.Replace(from, (match) => {
+          bool isStartInRange = match.Index <= trans.Length;
+          bool isEndInRange = match.Index + match.Length <= from.Length;
+          bool isInRange = isStartInRange && isEndInRange;
+          return isInRange ? match.Result(Pat.Replace) : match.Value;
+        });
+        return to[..(to.Length - meta.Length - 1)];
+      }
+
+      public string Preprocess(string meta, string trans) {
+        return trans;
+      }
+    }
+
+    internal class PreprocessPattern : IReplacer {
+      private readonly ReplacePattern Pat;
+
+      public PreprocessPattern(ReplacePattern pat) {
+        Pat = pat;
+      }
+
+      public string Postprocess(string meta, string trans) {
+        return trans;
+      }
+
+      public string Preprocess(string meta, string trans) {
+        if (!Pat.Extended) {
+          return Pat.Original.Replace(trans, Pat.Replace);
+        }
+
+        string from = $"{trans}\0{meta}";
+        string to = Pat.Original.Replace(from, (match) => {
+          bool isStartInRange = match.Index <= trans.Length;
+          bool isEndInRange = match.Index + match.Length <= from.Length;
+          bool isInRange = isStartInRange && isEndInRange;
+          return isInRange ? match.Result(Pat.Replace) : match.Value;
+        });
+        return to[..(to.Length - meta.Length - 1)];
+      }
+    }
+
+    internal class ReplacePattern {
+      public readonly bool Extended;
+      public readonly Regex Original;
+      public readonly string Replace;
+
+      public ReplacePattern(string pat, string replace) {
+        if (pat.StartsWith("(?:)")) {
+          Extended = true;
+          pat = pat[4..];
+        }
+
+        pat = pat.Replace(@"\jp", TextUtils.ClassJap);
+        Original = new Regex(pat, RegexOptions.None, TimeSpan.FromSeconds(10));
+
+        Replace = replace == "$" ? "" : Regex.Unescape(replace);
+      }
+    }
+
+    private class Import : IReplacer {
+      public string FullPath;
+      public ReplaceConfig Includer;
+
+      public Import(ReplaceConfig includer, string path) {
+        Includer = includer;
+        string dir = Path.GetDirectoryName(includer.FullPath)!;
+        FullPath = Path.GetFullPath(Path.Combine(dir, path));
+      }
+
+      public string Postprocess(string meta, string trans) {
+        return GetConfig().PostReplaceInternal(meta, trans);
+      }
+
+      public string Preprocess(string meta, string trans) {
+        return GetConfig().PreReplaceInternal(meta, trans);
+      }
+
+      private ReplaceConfig GetConfig() {
+        var cfg = Includer.ConfigResolver(FullPath);
+        if (cfg == null) {
+          string name = Path.GetFileName(FullPath);
+          throw new ApplicationException($"{name}를 찾을 수 없습니다");
+        }
+        return cfg;
+      }
+    }
+
+    private class ReplaceConfigLoader {
+      public readonly ReplaceConfig ReplaceConfig;
+      public readonly List<IReplacer> Rules;
+
+      private IEnumerator<string> Lines;
+
+      public ReplaceConfigLoader(ReplaceConfig config) {
+        ReplaceConfig = config;
+        Rules = LoadConfig();
+      }
+
+      private static bool IsCommentLine(string line) {
+        return string.IsNullOrWhiteSpace(line) || line[0] == '#';
+      }
+
+      private void ExpectReplaceLine(string patLine) {
+        while (Lines.MoveNext()) {
+          if (!IsCommentLine(Lines.Current)) {
+            return;
+          }
+        }
+        throw new ApplicationException($"다음 패턴을 치환할 문자열이 없습니다: {patLine}");
+      }
+
+      private List<IReplacer> LoadConfig() {
+        string[] lines = File.ReadAllLines(ReplaceConfig.FullPath);
+        Lines = lines.AsEnumerable().GetEnumerator();
+
+        var rules = new List<IReplacer>();
+        while (Lines.MoveNext()) {
+          if (IsCommentLine(Lines.Current)) {
+            continue;
+          }
+          var import = ReadImportLine();
+          if (import != null) {
+            rules.Add(import);
+          }
+          else {
+            var rule = ReadPatternLines();
+            rules.Add(rule);
+          }
+        }
+        return rules;
+      }
+
+      private Import? ReadImportLine() {
+        string line = Lines.Current;
+        if (line[0] != '*') {
+          return null;
+        }
+
+        var import = new Import(ReplaceConfig, line[1..]);
+        return !File.Exists(import.FullPath)
+          ? throw new ApplicationException($"참조 파일이 존재하지 않습니다: {import.FullPath}")
+          : import;
+      }
+
+      private IReplacer ReadPatternLines() {
+        string patLine = Lines.Current;
+        ExpectReplaceLine(patLine);
+
+        bool isPrePattern = patLine.StartsWith("(?=)", StringComparison.Ordinal);
+        string pat = isPrePattern ? patLine[4..] : patLine;
+        var rp = new ReplacePattern(pat, Lines.Current);
+        var rule = isPrePattern
+          ? new PreprocessPattern(rp) as IReplacer
+          : new PostprocessPattern(rp);
+        return rule;
+      }
     }
   }
 
   public class TextSpan {
-
-    public string? Title { get; private set; }
-    public long Offset { get; set; }
-    public long Length { get; set; }
-    public long End => Offset + Length;
-
     public string? Value;
 
     public TextSpan(long offset, long length, string? value, string? name) {
@@ -45,22 +292,34 @@ namespace Rengex.Model {
       Title = name;
     }
 
+    public long End => Offset + Length;
+    public long Length { get; set; }
+    public long Offset { get; set; }
+    public string? Title { get; private set; }
+
     public string Extract() {
       return Value;
     }
   }
 
-  class ExtendedMatcher {
+  internal class ExtendedMatcher {
+    public static readonly Regex RxProcGroup = GetExtendedGroupRegex(@"<([^>\s]+?F)>");
 
     private const RegexOptions RxoDefault
-        = RegexOptions.Compiled
+            = RegexOptions.Compiled
         | RegexOptions.Multiline
         | RegexOptions.ExplicitCapture
         | RegexOptions.IgnorePatternWhitespace;
 
-    private readonly Regex Root;
     private readonly Dictionary<string, Regex> Procedures;
+    private readonly Regex Root;
     private readonly TimeSpan Timeout;
+
+    public ExtendedMatcher(string pattern, TimeSpan timeout) {
+      Timeout = timeout;
+      Procedures = GetProcedures(pattern);
+      Root = Procedures[""];
+    }
 
     /// <summary>
     /// Matches to regex pattern &quot;(?prefix...)&quot;
@@ -84,52 +343,8 @@ namespace Rengex.Model {
         , RegexOptions.Compiled);
     }
 
-    public static readonly Regex RxProcGroup = GetExtendedGroupRegex(@"<([^>\s]+?F)>");
-
-    public ExtendedMatcher(string pattern, TimeSpan timeout) {
-      Timeout = timeout;
-      Procedures = GetProcedures(pattern);
-      Root = Procedures[""];
-    }
-
     public IEnumerable<TextSpan> Matches(string input) {
       return Matches(input, Root);
-    }
-
-    private IEnumerable<TextSpan> Matches(string input, Regex rule) {
-      foreach (Match m in rule.Matches(input)) {
-        foreach (var span in Match(m)) {
-          yield return span;
-        }
-      }
-    }
-
-    private IEnumerable<TextSpan> Match(Match m) {
-      var captures = AllCapturesOrderByIdx(m);
-      foreach (var (group, capture) in captures) {
-        if (group.Name.EndsWith("CC")) {
-          string proc = group.Name[0..^2] + 'F';
-          var spans = Matches(capture.Value, Procedures[proc]);
-          foreach (var span in spans) {
-            span.Offset += capture.Index;
-            yield return span;
-          }
-        }
-        else if (group.Name.EndsWith("C")) {
-          string proc = group.Name[0..^1] + 'F';
-          var mch = Procedures[proc].Match(capture.Value);
-          var spans = Match(mch);
-          foreach (var span in spans) {
-            span.Offset += capture.Index;
-            yield return span;
-          }
-        }
-        else {
-          yield return new TextSpan(
-            capture.Index, capture.Length,
-            capture.Value, group.Name);
-        }
-      }
     }
 
     private static IEnumerable<(Group, Capture)> AllCapturesOrderByIdx(Match m) {
@@ -164,15 +379,49 @@ namespace Rengex.Model {
       }
       return dict;
     }
+
+    private IEnumerable<TextSpan> Match(Match m) {
+      var captures = AllCapturesOrderByIdx(m);
+      foreach (var (group, capture) in captures) {
+        if (group.Name.EndsWith("CC")) {
+          string proc = group.Name[0..^2] + 'F';
+          var spans = Matches(capture.Value, Procedures[proc]);
+          foreach (var span in spans) {
+            span.Offset += capture.Index;
+            yield return span;
+          }
+        }
+        else if (group.Name.EndsWith("C")) {
+          string proc = group.Name[0..^1] + 'F';
+          var mch = Procedures[proc].Match(capture.Value);
+          var spans = Match(mch);
+          foreach (var span in spans) {
+            span.Offset += capture.Index;
+            yield return span;
+          }
+        }
+        else {
+          yield return new TextSpan(
+            capture.Index, capture.Length,
+            capture.Value, group.Name);
+        }
+      }
+    }
+
+    private IEnumerable<TextSpan> Matches(string input, Regex rule) {
+      foreach (Match m in rule.Matches(input)) {
+        foreach (var span in Match(m)) {
+          yield return span;
+        }
+      }
+    }
   }
 
-  class MatchConfig : IDotConfig<MatchConfig> {
+  internal class MatchConfig : IDotConfig<MatchConfig> {
     public static readonly string Extension = ".match.txt";
 
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
     private readonly ExtendedMatcher Matcher;
-
-    public Func<string, MatchConfig> ConfigResolver { set { } }
 
     public MatchConfig() {
       Matcher = new ExtendedMatcher(@"(?<text>.*)", Timeout);
@@ -183,271 +432,22 @@ namespace Rengex.Model {
       Matcher = new ExtendedMatcher(pat, Timeout);
     }
 
+    public Func<string, MatchConfig> ConfigResolver { set { } }
+
     public MatchConfig CreateFromFile(string path) {
       return new MatchConfig(path);
-    }
-
-    public IEnumerable<TextSpan> Matches(string input) {
-      return Matcher.Matches(input);
     }
 
     public string GetDefaultConfig() => Properties.Resources.DefaultMatch;
 
     public string GetExtension() => Extension;
 
+    public IEnumerable<TextSpan> Matches(string input) {
+      return Matcher.Matches(input);
+    }
+
     private static string GetPattern(string path) {
       return File.ReadAllText(path).Replace(@"\jp", TextUtils.ClassJap);
-    }
-  }
-
-  /// <summary>
-  /// 번역 전, 후 치환 규칙 설정을 담당하는 클래스
-  /// </summary>
-  public class ReplaceConfig : IDotConfig<ReplaceConfig> {
-    public static readonly string Extension = ".repla.txt";
-
-    interface IReplacer {
-      string Preprocess(string meta, string trans);
-      string Postprocess(string meta, string trans);
-    }
-
-    internal class ReplacePattern {
-      public readonly Regex Original;
-      public readonly string Replace;
-      public readonly bool Extended;
-
-      public ReplacePattern(string pat, string replace) {
-        if (pat.StartsWith("(?:)")) {
-          Extended = true;
-          pat = pat[4..];
-        }
-
-        pat = pat.Replace(@"\jp", TextUtils.ClassJap);
-        Original = new Regex(pat, RegexOptions.None, TimeSpan.FromSeconds(10));
-
-        Replace = replace == "$" ? "" : Regex.Unescape(replace);
-      }
-    }
-
-    internal class PreprocessPattern : IReplacer {
-      readonly ReplacePattern Pat;
-
-      public PreprocessPattern(ReplacePattern pat) {
-        Pat = pat;
-      }
-
-      public string Preprocess(string meta, string trans) {
-        if (!Pat.Extended) {
-          return Pat.Original.Replace(trans, Pat.Replace);
-        }
-
-        string from = $"{trans}\0{meta}";
-        string to = Pat.Original.Replace(from, (match) => {
-          bool isStartInRange = match.Index <= trans.Length;
-          bool isEndInRange = match.Index + match.Length <= from.Length;
-          bool isInRange = isStartInRange && isEndInRange;
-          return isInRange ? match.Result(Pat.Replace) : match.Value;
-        });
-        return to[..(to.Length - meta.Length - 1)];
-      }
-
-      public string Postprocess(string meta, string trans) {
-        return trans;
-      }
-    }
-
-    internal class PostprocessPattern : IReplacer {
-      readonly ReplacePattern Pat;
-
-      public PostprocessPattern(ReplacePattern pat) {
-        Pat = pat;
-      }
-
-      public string Preprocess(string meta, string trans) {
-        return trans;
-      }
-
-      public string Postprocess(string meta, string trans) {
-        if (!Pat.Extended) {
-          return Pat.Original.Replace(trans, Pat.Replace);
-        }
-
-        string from = $"{trans}\0{meta}";
-        string to = Pat.Original.Replace(from, (match) => {
-          bool isStartInRange = match.Index <= trans.Length;
-          bool isEndInRange = match.Index + match.Length <= from.Length;
-          bool isInRange = isStartInRange && isEndInRange;
-          return isInRange ? match.Result(Pat.Replace) : match.Value;
-        });
-        return to[..(to.Length - meta.Length - 1)];
-      }
-    }
-
-    private class Import : IReplacer {
-      public ReplaceConfig Includer;
-
-      public string FullPath;
-
-      public Import(ReplaceConfig includer, string path) {
-        Includer = includer;
-        string dir = Path.GetDirectoryName(includer.FullPath)!;
-        FullPath = Path.GetFullPath(Path.Combine(dir, path));
-      }
-
-      public string Preprocess(string meta, string trans) {
-        return GetConfig().PreReplaceInternal(meta, trans);
-      }
-
-      public string Postprocess(string meta, string trans) {
-        return GetConfig().PostReplaceInternal(meta, trans);
-      }
-
-      private ReplaceConfig GetConfig() {
-        var cfg = Includer.ConfigResolver(FullPath);
-        if (cfg == null) {
-          string name = Path.GetFileName(FullPath);
-          throw new ApplicationException($"{name}를 찾을 수 없습니다");
-        }
-        return cfg;
-      }
-    }
-
-    private readonly string FullPath;
-    private readonly List<IReplacer> Replacers;
-
-    Func<string, ReplaceConfig> ConfigResolver;
-
-    Func<string, ReplaceConfig> IDotConfig<ReplaceConfig>.ConfigResolver {
-      set { ConfigResolver = value; }
-    }
-
-    public ReplaceConfig() {
-      Replacers = new List<IReplacer>();
-    }
-
-    public ReplaceConfig(string replaceConfigPath) {
-      FullPath = Path.GetFullPath(replaceConfigPath);
-      Replacers = new ReplaceConfigLoader(this).Rules;
-    }
-
-    /// <summary>
-    /// 번역 전처리
-    /// </summary>
-    /// <param name="name">매칭 그룹 이름</param>
-    /// <param name="src">번역 전 원문</param>
-    /// <returns>전처리된 문자열</returns>
-    public string PreReplace(string name, string src) {
-      return PreReplaceInternal(name, src);
-    }
-
-    public string PreReplaceInternal(string meta, string src) {
-      string ret = src;
-      foreach (var rule in Replacers) {
-        ret = rule.Preprocess(meta, ret);
-      }
-      return ret;
-    }
-
-    /// <summary>
-    /// 번역 후처리. 원문첨부 매칭을 위해 원문도 필요.
-    /// </summary>
-    /// <param name="name">매칭 그룹 이름</param>
-    /// <param name="src">번역 전 원문</param>
-    /// <param name="trans">번역 후 문자열</param>
-    /// <returns>최종 문자열</returns>
-    public string PostReplace(string name, string src, string trans) {
-      return PostReplaceInternal($"{src}\0{name}", trans);
-    }
-
-    private string PostReplaceInternal(string meta, string trans) {
-      string ret = trans;
-      foreach (var rule in Replacers) {
-        ret = rule.Postprocess(meta, ret);
-      }
-      return ret;
-    }
-
-    class ReplaceConfigLoader {
-      public readonly ReplaceConfig ReplaceConfig;
-      public readonly List<IReplacer> Rules;
-
-      private IEnumerator<string> Lines;
-
-      public ReplaceConfigLoader(ReplaceConfig config) {
-        ReplaceConfig = config;
-        Rules = LoadConfig();
-      }
-
-      private List<IReplacer> LoadConfig() {
-        string[] lines = File.ReadAllLines(ReplaceConfig.FullPath);
-        Lines = lines.AsEnumerable().GetEnumerator();
-
-        var rules = new List<IReplacer>();
-        while (Lines.MoveNext()) {
-          if (IsCommentLine(Lines.Current)) {
-            continue;
-          }
-          var import = ReadImportLine();
-          if (import != null) {
-            rules.Add(import);
-          }
-          else {
-            var rule = ReadPatternLines();
-            rules.Add(rule);
-          }
-        }
-        return rules;
-      }
-
-      private static bool IsCommentLine(string line) {
-        return string.IsNullOrWhiteSpace(line) || line[0] == '#';
-      }
-
-      private Import? ReadImportLine() {
-        string line = Lines.Current;
-        if (line[0] != '*') {
-          return null;
-        }
-
-        var import = new Import(ReplaceConfig, line[1..]);
-        return !File.Exists(import.FullPath)
-          ? throw new ApplicationException($"참조 파일이 존재하지 않습니다: {import.FullPath}")
-          : import;
-      }
-
-      private IReplacer ReadPatternLines() {
-        string patLine = Lines.Current;
-        ExpectReplaceLine(patLine);
-
-        bool isPrePattern = patLine.StartsWith("(?=)", StringComparison.Ordinal);
-        string pat = isPrePattern ? patLine[4..] : patLine;
-        var rp = new ReplacePattern(pat, Lines.Current);
-        var rule = isPrePattern
-          ? new PreprocessPattern(rp) as IReplacer
-          : new PostprocessPattern(rp);
-        return rule;
-      }
-
-      private void ExpectReplaceLine(string patLine) {
-        while (Lines.MoveNext()) {
-          if (!IsCommentLine(Lines.Current)) {
-            return;
-          }
-        }
-        throw new ApplicationException($"다음 패턴을 치환할 문자열이 없습니다: {patLine}");
-      }
-    }
-
-    public ReplaceConfig CreateFromFile(string path) {
-      return new ReplaceConfig(path);
-    }
-
-    public string GetDefaultConfig() {
-      return Properties.Resources.DefaultReplace;
-    }
-
-    public string GetExtension() {
-      return Extension;
     }
   }
 }

@@ -1,4 +1,5 @@
 namespace Rengex.Helper {
+
   using System;
   using System.Collections.Concurrent;
   using System.Collections.Generic;
@@ -10,20 +11,6 @@ namespace Rengex.Helper {
   using System.Windows.Input;
 
   public static class Util {
-    public static string PrecreateDirectory(string path) {
-      string? directory = Path.GetDirectoryName(path);
-      if (directory != null) {
-        Directory.CreateDirectory(directory);
-      }
-      return path;
-    }
-
-    public static string GetEllipsisPath(string path, int len) {
-      string ellipsisPath = path.Length > len
-        ? $"...{path.Substring(path.Length - len)}"
-        : path;
-      return ellipsisPath;
-    }
 
     public static async Task CopyFileAsync(string sourcePath, string destinationPath) {
       using Stream source = File.Open(sourcePath, FileMode.Open);
@@ -54,31 +41,26 @@ namespace Rengex.Helper {
       });
       return Task.WhenAll(tasks);
     }
-  }
 
-  public class ViewModelBase : INotifyPropertyChanged {
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    /// <summary>
-    /// It should be called only in the property setter.
-    /// </summary>
-    protected void Set<T>(ref T member, T value, [CallerMemberName] string name = null) {
-      if (Equals(member, value)) {
-        return;
-      }
-      member = value;
-      NotifyChange(name);
+    public static string GetEllipsisPath(string path, int len) {
+      string ellipsisPath = path.Length > len
+        ? $"...{path.Substring(path.Length - len)}"
+        : path;
+      return ellipsisPath;
     }
 
-    protected void NotifyChange(string name) {
-      var ev = new PropertyChangedEventArgs(name);
-      PropertyChanged?.Invoke(this, ev);
+    public static string PrecreateDirectory(string path) {
+      string? directory = Path.GetDirectoryName(path);
+      if (directory != null) {
+        Directory.CreateDirectory(directory);
+      }
+      return path;
     }
   }
 
   public class RelayCommand : ICommand {
-    readonly Action _execute;
-    readonly Func<bool> _canExecute;
+    private readonly Func<bool> _canExecute;
+    private readonly Action _execute;
 
     public RelayCommand(Action execute) : this(execute, null) {
     }
@@ -104,13 +86,9 @@ namespace Rengex.Helper {
   }
 
   public class RelayCommand<T> : ICommand {
+    private readonly Predicate<T> _canExecute;
 
-    private static T NullToDefault(object parameter) {
-      return parameter == null ? default : (T)parameter;
-    }
-
-    readonly Action<T> _execute;
-    readonly Predicate<T> _canExecute;
+    private readonly Action<T> _execute;
 
     /// <summary>
     /// Initializes a new instance of <see cref="DelegateCommand{T}"/>.
@@ -131,7 +109,20 @@ namespace Rengex.Helper {
       _canExecute = canExecute ?? (_ => true);
     }
 
+    public void NotifyCanExecute() {
+      CanExecuteChanged.Invoke(null, null);
+    }
+
+    private static T NullToDefault(object parameter) {
+      return parameter == null ? default : (T)parameter;
+    }
+
     #region ICommand Members
+
+    ///<summary>
+    ///Occurs when changes occur that affect whether or not the command should execute.
+    ///</summary>
+    public event EventHandler CanExecuteChanged;
 
     ///<summary>
     ///Defines the method that determines whether the command can execute in its current state.
@@ -146,11 +137,6 @@ namespace Rengex.Helper {
     }
 
     ///<summary>
-    ///Occurs when changes occur that affect whether or not the command should execute.
-    ///</summary>
-    public event EventHandler CanExecuteChanged;
-
-    ///<summary>
     ///Defines the method to be called when the command is invoked.
     ///</summary>
     ///<param name="parameter">Data used by the command. If the command does not
@@ -159,10 +145,27 @@ namespace Rengex.Helper {
       _execute(NullToDefault(parameter));
     }
 
-    #endregion
+    #endregion ICommand Members
+  }
 
-    public void NotifyCanExecute() {
-      CanExecuteChanged.Invoke(null, null);
+  public class ViewModelBase : INotifyPropertyChanged {
+
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    protected void NotifyChange(string name) {
+      var ev = new PropertyChangedEventArgs(name);
+      PropertyChanged?.Invoke(this, ev);
+    }
+
+    /// <summary>
+    /// It should be called only in the property setter.
+    /// </summary>
+    protected void Set<T>(ref T member, T value, [CallerMemberName] string name = null) {
+      if (Equals(member, value)) {
+        return;
+      }
+      member = value;
+      NotifyChange(name);
     }
   }
 }

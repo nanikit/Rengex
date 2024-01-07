@@ -1,26 +1,25 @@
 namespace Rengex.Model {
+
+  using Rengex;
+  using Rengex.Helper;
   using System;
   using System.Collections.Generic;
   using System.IO;
   using System.Text.RegularExpressions;
   using System.Threading.Tasks;
-  using Rengex;
-  using Rengex.Helper;
 
   public class ManagedPath {
-
     public const string ProjectDirectory = "rengex";
-    public static readonly string OriginalDirectory = Path.Combine(ProjectDirectory, OriginalName);
     public static readonly string MetadataDirectory = Path.Combine(ProjectDirectory, MetadataName);
+    public static readonly string OriginalDirectory = Path.Combine(ProjectDirectory, OriginalName);
+    public static readonly string ResultDirectory = Path.Combine(ProjectDirectory, ResultName);
     public static readonly string SourceDirectory = Path.Combine(ProjectDirectory, SourceName);
     public static readonly string TargetDirectory = Path.Combine(ProjectDirectory, TargetName);
-    public static readonly string ResultDirectory = Path.Combine(ProjectDirectory, ResultName);
-
-    private const string OriginalName = "1_original";
     private const string MetadataName = "2_meta";
+    private const string OriginalName = "1_original";
+    private const string ResultName = "5_result";
     private const string SourceName = "3_source";
     private const string TargetName = "4_target";
-    private const string ResultName = "5_result";
 
     #region Fields and properties (mainly for path)
 
@@ -28,35 +27,6 @@ namespace Rengex.Model {
     /// 원본 파일 절대 경로
     /// </summary>
     public string? ExternalPath { get; private set; }
-    /// <summary>
-    /// 프로젝트 내에서의 상대 경로
-    /// </summary>
-    public string RelativePath { get; private set; }
-    /// <summary>
-    /// 프로젝트 경로
-    /// </summary>
-    public string ProjectPath { get; private set; }
-
-    /// <summary>
-    /// 프로젝트 폴더 안에 복사한 원본 파일 경로.
-    /// </summary>
-    public string OriginalPath => Path.Combine(OriginalDirectory, RelativePath);
-    /// <summary>
-    /// 메타데이터 파일 경로.
-    /// </summary>
-    public string MetadataPath => Path.Combine(MetadataDirectory, $"{RelativePath}.meta.txt");
-    /// <summary>
-    /// 시작어 파일 경로.
-    /// </summary>
-    public string SourcePath => Path.Combine(SourceDirectory, $"{RelativePath}.txt");
-    /// <summary>
-    /// 도착어 파일 경로.
-    /// </summary>
-    public string TargetPath => Path.Combine(TargetDirectory, $"{RelativePath}.txt");
-    /// <summary>
-    /// 결과 파일 경로.
-    /// </summary>
-    public string ResultPath => Path.Combine(ResultDirectory, RelativePath);
 
     public bool IsInProject {
       get {
@@ -65,7 +35,42 @@ namespace Rengex.Model {
       }
     }
 
-    #endregion
+    /// <summary>
+    /// 메타데이터 파일 경로.
+    /// </summary>
+    public string MetadataPath => Path.Combine(MetadataDirectory, $"{RelativePath}.meta.txt");
+
+    /// <summary>
+    /// 프로젝트 폴더 안에 복사한 원본 파일 경로.
+    /// </summary>
+    public string OriginalPath => Path.Combine(OriginalDirectory, RelativePath);
+
+    /// <summary>
+    /// 프로젝트 경로
+    /// </summary>
+    public string ProjectPath { get; private set; }
+
+    /// <summary>
+    /// 프로젝트 내에서의 상대 경로
+    /// </summary>
+    public string RelativePath { get; private set; }
+
+    /// <summary>
+    /// 결과 파일 경로.
+    /// </summary>
+    public string ResultPath => Path.Combine(ResultDirectory, RelativePath);
+
+    /// <summary>
+    /// 시작어 파일 경로.
+    /// </summary>
+    public string SourcePath => Path.Combine(SourceDirectory, $"{RelativePath}.txt");
+
+    /// <summary>
+    /// 도착어 파일 경로.
+    /// </summary>
+    public string TargetPath => Path.Combine(TargetDirectory, $"{RelativePath}.txt");
+
+    #endregion Fields and properties (mainly for path)
 
     /// <summary>
     /// Represents matching paths in project.

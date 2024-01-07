@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Markup;
 
 namespace Rengex.View {
+
   /// <summary>
   /// A utility for importing separate xaml files while previewing it in xaml editor.
   /// </summary>
@@ -16,25 +17,14 @@ namespace Rengex.View {
   //  </ResourceDictionary>
   // </Window.Resources>
   internal class FlatDictionary : ResourceDictionary, ISupportInitialize {
-
     // TODO: It seems to be able to support autocomplete by EndInit() and
     // LoadComponent(object, Uri), but have limitation from
     // Application.LoadComponent that cannot reference other assembly.
 
-    private class Proxy { }
+    private Uri? _DesignSource;
 
     private string? _Key;
-    public string? Key {
-      get { return _Key; }
-      set {
-        _Key = value;
-        if (DesignSource != null) {
-          Register();
-        }
-      }
-    }
 
-    private Uri? _DesignSource;
     public Uri? DesignSource {
       get => _DesignSource;
       set {
@@ -45,8 +35,14 @@ namespace Rengex.View {
       }
     }
 
-    private void Register() {
-      this[Key] = new Proxy();
+    public string? Key {
+      get { return _Key; }
+      set {
+        _Key = value;
+        if (DesignSource != null) {
+          Register();
+        }
+      }
     }
 
     protected override void OnGettingValue(object key, ref object? value, out bool canCache) {
@@ -78,5 +74,11 @@ namespace Rengex.View {
       }
       return Application.LoadComponent(relUri);
     }
+
+    private void Register() {
+      this[Key] = new Proxy();
+    }
+
+    private class Proxy { }
   }
 }

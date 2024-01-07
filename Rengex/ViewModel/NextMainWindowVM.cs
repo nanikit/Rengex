@@ -1,25 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Rengex.ViewModel {
-  class NextMainWindowVM {
+
+  internal class BlockEditorVM {
   }
 
-  class PathSelectionVM {
+  internal class ConfiguratorVM {
   }
 
-  class ConfiguratorVM {
+  internal class ContentPreviewVM {
   }
 
-  class DetailSectionVM {
+  internal class DetailSectionVM {
   }
 
-  class ContentPreviewVM {
+  internal class NextMainWindowVM {
   }
 
-  class BlockEditorVM {
+  internal class PathSelectionVM {
   }
 }

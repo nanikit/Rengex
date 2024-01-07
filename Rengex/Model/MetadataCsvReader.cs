@@ -1,4 +1,5 @@
 namespace Rengex.Model {
+
   using System;
   using System.Collections.Generic;
   using System.IO;
@@ -7,11 +8,15 @@ namespace Rengex.Model {
   /// <summary>
   /// State
   /// </summary>
-  sealed class MetadataCsvReader : IDisposable {
-    readonly TextReader _base;
+  internal sealed class MetadataCsvReader : IDisposable {
+    private readonly TextReader _base;
 
     public MetadataCsvReader(TextReader reader) {
       _base = reader;
+    }
+
+    public void Dispose() {
+      _base?.Dispose();
     }
 
     public IEnumerable<TextSpan> GetSpans() {
@@ -53,10 +58,6 @@ namespace Rengex.Model {
       else {
         return new TextSpan(off, len, null, csv[2]);
       }
-    }
-
-    public void Dispose() {
-      _base?.Dispose();
     }
   }
 }

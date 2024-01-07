@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace Rengex.Translator {
+
   /// <summary>
   /// It provides split translation with progress information.
   /// </summary>
@@ -10,18 +11,26 @@ namespace Rengex.Translator {
   /// It's Dispose() doesn't dispose base translator.
   /// </remarks>
   public class SplitTranslator : ITranslator {
-
-    public interface IJp2KrLogger {
-      void OnStart(int total);
-      void OnProgress(int current);
-    }
-
     private readonly ITranslator Backend;
+
     private readonly IJp2KrLogger? Logger;
 
     public SplitTranslator(ITranslator translator, IJp2KrLogger? progress = null) {
       Backend = translator;
       Logger = progress;
+    }
+
+    public interface IJp2KrLogger {
+
+      void OnProgress(int current);
+
+      void OnStart(int total);
+    }
+
+    /// <summary>
+    /// It does nothing.
+    /// </summary>
+    public void Dispose() {
     }
 
     public async Task<string> Translate(string source) {
@@ -43,12 +52,6 @@ namespace Rengex.Translator {
 
       string[] results = await Task.WhenAll(splitTasks).ConfigureAwait(false);
       return string.Join("", results);
-    }
-
-    /// <summary>
-    /// It does nothing.
-    /// </summary>
-    public void Dispose() {
     }
 
     // TODO: improve readability

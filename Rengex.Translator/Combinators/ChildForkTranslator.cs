@@ -4,9 +4,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Rengex.Translator {
+
   public class ChildForkTranslator {
-    readonly ITranslator Translator;
-    readonly NamedPipeClientStream PipeClient;
+    private readonly NamedPipeClientStream PipeClient;
+    private readonly ITranslator Translator;
 
     public ChildForkTranslator(ITranslator basis, string pipeName) {
       PipeClient = new NamedPipeClientStream(pipeName);

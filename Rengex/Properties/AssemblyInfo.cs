@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Windows;
 
 [assembly: ThemeInfo(
@@ -9,5 +9,4 @@ using System.Windows;
                                               //(used if a resource is not found in the page,
                                               // app, or any theme specific resource dictionaries)
 )]
-
 [assembly: InternalsVisibleTo("Rengex.Test")]

@@ -1,4 +1,5 @@
-﻿#nullable enable
+#nullable enable
+
 using System;
 using System.Threading.Tasks;
 
@@ -8,6 +9,7 @@ namespace Rengex.Translator {
   /// It can translate japanese to korean.
   /// </summary>
   public interface ITranslator : IDisposable {
+
     /// <summary>
     /// Translate japanese string to korean.
     /// </summary>

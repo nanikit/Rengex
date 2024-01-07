@@ -1,4 +1,5 @@
 namespace Rengex.Model {
+
   using Rengex.Helper;
   using Rengex.Translator;
   using System.IO;
@@ -6,12 +7,23 @@ namespace Rengex.Model {
 
   public class TranslationUnit {
 
-    public ManagedPath ManagedPath { get; set; }
-    public IRegexDotConfiguration DotConfig { get; set; }
-
     public TranslationUnit(IRegexDotConfiguration dot, ManagedPath path) {
       DotConfig = dot;
       ManagedPath = path;
+    }
+
+    public IRegexDotConfiguration DotConfig { get; set; }
+    public ManagedPath ManagedPath { get; set; }
+
+    public async Task BuildTranslation() {
+      var reconstructor = new Reconstructor(DotConfig.GetConfiguration(ManagedPath.OriginalPath));
+
+      using var original = File.OpenRead(ManagedPath.OriginalPath);
+      using var meta = File.OpenText(ManagedPath.MetadataPath);
+      using var target = File.OpenText(ManagedPath.TargetPath);
+      using var result = File.Create(Util.PrecreateDirectory(ManagedPath.ResultPath));
+
+      await reconstructor.Merge(original, meta, target, result).ConfigureAwait(false);
     }
 
     public async Task ExtractSourceText() {
@@ -40,17 +52,6 @@ namespace Rengex.Model {
       using var kr = File.CreateText(Util.PrecreateDirectory(ManagedPath.TargetPath));
       var reconstructor = new Reconstructor(DotConfig.GetConfiguration(ManagedPath.OriginalPath));
       await reconstructor.Translate(meta, jp, translator, kr).ConfigureAwait(false);
-    }
-
-    public async Task BuildTranslation() {
-      var reconstructor = new Reconstructor(DotConfig.GetConfiguration(ManagedPath.OriginalPath));
-
-      using var original = File.OpenRead(ManagedPath.OriginalPath);
-      using var meta = File.OpenText(ManagedPath.MetadataPath);
-      using var target = File.OpenText(ManagedPath.TargetPath);
-      using var result = File.Create(Util.PrecreateDirectory(ManagedPath.ResultPath));
-
-      await reconstructor.Merge(original, meta, target, result).ConfigureAwait(false);
     }
   }
 }

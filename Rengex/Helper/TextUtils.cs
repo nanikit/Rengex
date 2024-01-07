@@ -5,7 +5,9 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Rengex.Helper {
+
   public static class TextUtils {
+
     public const string ClassJap = ""
       + @"\u2E80-\u2EFF" // 한,중,일 부수 보충, ⺀-⻿
       + @"\u3040-\u309F" // 히라가나, ぀-ゟ
@@ -17,11 +19,6 @@ namespace Rengex.Helper {
                                                    //+ @"\uFF64-\uFF9F" // half-width katakana
       + @"\uFF00-\uFF9F" // Full-width alphabet, half-width katakana ,＀-ﾟ
       ;
-
-    public static bool Match(this Regex rx, string input, int index, out Match m) {
-      m = rx.Match(input, index);
-      return m.Success;
-    }
 
     public static int Count(this string str, char ch) {
       char[] ar = str.ToCharArray();
@@ -59,6 +56,11 @@ namespace Rengex.Helper {
       var file = File.Open(Util.PrecreateDirectory(path), FileMode.Create, FileAccess.Write, FileShare.Read);
       file.SetLength(0);
       return new StreamWriter(file, Encoding.UTF8);
+    }
+
+    public static bool Match(this Regex rx, string input, int index, out Match m) {
+      m = rx.Match(input, index);
+      return m.Success;
     }
 
     public static int SkipUtf8Chars(MemoryStream raw, int chars) {
@@ -134,15 +136,26 @@ namespace Rengex.Helper {
     }
   }
 
-  class CharCountingReader {
-    public int Position { get; private set; }
-
+  internal class CharCountingReader {
     private readonly TextReader _base;
     private char[] _buffer;
 
     public CharCountingReader(TextReader reader, char[]? buffer = null) {
       _base = reader;
       _buffer = buffer ?? new char[2048];
+    }
+
+    public int Position { get; private set; }
+
+    public async Task<string?> ReadStringAsync(int length) {
+      if (_buffer.Length < length) {
+        _buffer = new char[length];
+      }
+
+      int read = await _base.ReadAsync(_buffer, 0, length).ConfigureAwait(false);
+      Position += read;
+
+      return read == length ? new string(_buffer, 0, length) : null;
     }
 
     public async Task<int> TextCopyTo(TextWriter destination, int length) {
@@ -160,20 +173,19 @@ namespace Rengex.Helper {
       Position += totalRead;
       return totalRead;
     }
-
-    public async Task<string?> ReadStringAsync(int length) {
-      if (_buffer.Length < length) {
-        _buffer = new char[length];
-      }
-
-      int read = await _base.ReadAsync(_buffer, 0, length).ConfigureAwait(false);
-      Position += read;
-
-      return read == length ? new string(_buffer, 0, length) : null;
-    }
   }
 
-  class StringWithCodePage {
+  internal class StringWithCodePage {
+
+    public StringWithCodePage(string content, Encoding encoding) {
+      Content = content;
+      Encoding = encoding;
+    }
+
+    public string Content { get; set; }
+
+    public Encoding Encoding { get; set; }
+
     public static async Task<(string Text, Encoding Encoding)?> ReadAllTextWithDetectionAsync(Stream stream) {
       string[] encodingNames = new string[] {
         "utf-8",
@@ -194,14 +206,6 @@ namespace Rengex.Helper {
         catch (DecoderFallbackException) { }
       }
       return null;
-    }
-
-    public string Content { get; set; }
-    public Encoding Encoding { get; set; }
-
-    public StringWithCodePage(string content, Encoding encoding) {
-      Content = content;
-      Encoding = encoding;
     }
   }
 }

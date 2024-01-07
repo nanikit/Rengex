@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Rengex.Model {
+
   internal class Reconstructor {
     private readonly RegexConfiguration _configuration;
 
@@ -18,9 +19,24 @@ namespace Rengex.Model {
       case (string text, _):
         await ExtractFromString(meta, source, text).ConfigureAwait(false);
         break;
+
       case null:
         // TODO: UI message
         break;
+      }
+    }
+
+    public async Task Merge(Stream original, TextReader meta, TextReader target, Stream result) {
+      switch (await StringWithCodePage.ReadAllTextWithDetectionAsync(original).ConfigureAwait(false)) {
+      case (string text, Encoding encoding): {
+          using var metaReader = new MetadataCsvReader(meta);
+          using var resultWriter = new StreamWriter(result, encoding, leaveOpen: true);
+          await CompileTranslation(text, metaReader, target, resultWriter).ConfigureAwait(false);
+          break;
+        }
+      default:
+        await original.CopyToAsync(result).ConfigureAwait(false);
+        return;
       }
     }
 
@@ -38,18 +54,30 @@ namespace Rengex.Model {
       await target.WriteAsync(translated).ConfigureAwait(false);
     }
 
-    public async Task Merge(Stream original, TextReader meta, TextReader target, Stream result) {
-      switch (await StringWithCodePage.ReadAllTextWithDetectionAsync(original).ConfigureAwait(false)) {
-      case (string text, Encoding encoding): {
-          using var metaReader = new MetadataCsvReader(meta);
-          using var resultWriter = new StreamWriter(result, encoding, leaveOpen: true);
-          await CompileTranslation(text, metaReader, target, resultWriter).ConfigureAwait(false);
-          break;
+    private async Task<string> ApplyPostProcess(TextSpan span, CharCountingReader src, string translation) {
+      string? original = await src.ReadStringAsync((int)span.Length).ConfigureAwait(false);
+      return _configuration.PostReplace(span.Title ?? "", original ?? "", translation);
+    }
+
+    private async Task CompileTranslation(string original, MetadataCsvReader meta, TextReader target, TextWriter result) {
+      var originalReader = new CharCountingReader(new StringReader(original));
+      var substitution = new SpanPairReader(target);
+
+      foreach (var span in meta.GetSpans()) {
+        int preserveSize = (int)span.Offset - originalReader.Position;
+        if (await originalReader.TextCopyTo(result, preserveSize).ConfigureAwait(false) != preserveSize) {
+          return;
         }
-      default:
-        await original.CopyToAsync(result).ConfigureAwait(false);
-        return;
+
+        string translated = substitution.ReadCorrespondingSpan(span);
+        translated = await ApplyPostProcess(span, originalReader, translated).ConfigureAwait(false);
+        if (translated == null) {
+          continue;
+        }
+        await result.WriteAsync(translated).ConfigureAwait(false);
       }
+      await originalReader.TextCopyTo(result, int.MaxValue).ConfigureAwait(false);
+      // TODO: warn mismatch of translation having more line
     }
 
     private async Task ExtractFromString(TextWriter meta, TextWriter source, string text) {
@@ -77,34 +105,7 @@ namespace Rengex.Model {
       await metaWrite.ConfigureAwait(false);
       await sourceWrite.ConfigureAwait(false);
     }
-
-    private async Task CompileTranslation(string original, MetadataCsvReader meta, TextReader target, TextWriter result) {
-      var originalReader = new CharCountingReader(new StringReader(original));
-      var substitution = new SpanPairReader(target);
-
-      foreach (var span in meta.GetSpans()) {
-        int preserveSize = (int)span.Offset - originalReader.Position;
-        if (await originalReader.TextCopyTo(result, preserveSize).ConfigureAwait(false) != preserveSize) {
-          return;
-        }
-
-        string translated = substitution.ReadCorrespondingSpan(span);
-        translated = await ApplyPostProcess(span, originalReader, translated).ConfigureAwait(false);
-        if (translated == null) {
-          continue;
-        }
-        await result.WriteAsync(translated).ConfigureAwait(false);
-      }
-      await originalReader.TextCopyTo(result, int.MaxValue).ConfigureAwait(false);
-      // TODO: warn mismatch of translation having more line
-    }
-
-    private async Task<string> ApplyPostProcess(TextSpan span, CharCountingReader src, string translation) {
-      string? original = await src.ReadStringAsync((int)span.Length).ConfigureAwait(false);
-      return _configuration.PostReplace(span.Title ?? "", original ?? "", translation);
-    }
   }
-
 
   /// <summary>
   /// 메타 파일에 대응하는 번역문 부분을 가져오는 클래스.
@@ -121,6 +122,21 @@ namespace Rengex.Model {
     public string ReadCorrespondingSpan(TextSpan span) {
       int spanLineCount = TextUtils.CountLines(span.Value);
       return ReadCorrespondingLines(spanLineCount);
+    }
+
+    private void CopyTrailingLF(bool skipBuffer) {
+      if (skipBuffer) {
+        if (Reader.Peek() == '\n') {
+          _ = Reader.Read();
+        }
+      }
+      else {
+        _ = Buffer.Append('\r');
+        if (Reader.Peek() == '\n') {
+          _ = Reader.Read();
+          _ = Buffer.Append('\n');
+        }
+      }
     }
 
     private string ReadCorrespondingLines(int n) {
@@ -145,21 +161,6 @@ namespace Rengex.Model {
       }
 
       return Buffer.ToString();
-    }
-
-    private void CopyTrailingLF(bool skipBuffer) {
-      if (skipBuffer) {
-        if (Reader.Peek() == '\n') {
-          _ = Reader.Read();
-        }
-      }
-      else {
-        _ = Buffer.Append('\r');
-        if (Reader.Peek() == '\n') {
-          _ = Reader.Read();
-          _ = Buffer.Append('\n');
-        }
-      }
     }
   }
 }

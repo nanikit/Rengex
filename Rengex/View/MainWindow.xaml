@@ -1,4 +1,4 @@
-﻿<Window x:Class="Rengex.View.MainWindow"
+<Window x:Class="Rengex.View.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -12,7 +12,7 @@
         <Canvas Name="svg824" Width="25" Height="24">
           <Path Name="inboxupload" Fill="#FF157EFB" StrokeThickness="1">
             <Path.Data>
-              <PathGeometry Figures="m 12 2.0000001 -3.25 3.25 L 8 4.5000001 12.5 9.9999999e-8 17 4.5000001 l -0.75 0.75 -3.25 -3.25 V 13 H 12 Z M 17 15 h 6.775024 l -4.375 -6.9999999 H 14 v -1 h 6 L 25 15 v 1 8 H 0 V 15 L 5 7.0000001 h 6 v 0 1 H 5.5999756 L 1.2249756 15 H 8 v 2 c 0 1.104569 0.895858 2 1.997392 2 h 5.005216 C 16.105737 19 17 18.11227 17 17 Z" FillRule="EvenOdd"/>
+              <PathGeometry Figures="m 12 2.0000001 -3.25 3.25 L 8 4.5000001 12.5 9.9999999e-8 17 4.5000001 l -0.75 0.75 -3.25 -3.25 V 13 H 12 Z M 17 15 h 6.775024 l -4.375 -6.9999999 H 14 v -1 h 6 L 25 15 v 1 8 H 0 V 15 L 5 7.0000001 h 6 v 0 1 H 5.5999756 L 1.2249756 15 H 8 v 2 c 0 1.104569 0.895858 2 1.997392 2 h 5.005216 C 16.105737 19 17 18.11227 17 17 Z" FillRule="EvenOdd" />
             </Path.Data>
           </Path>
         </Canvas>
@@ -21,13 +21,13 @@
       <Viewbox x:Key="Flask" Stretch="Uniform">
         <Canvas Name="svg831" Width="640" Height="640">
           <Canvas.RenderTransform>
-            <TranslateTransform X="0" Y="0"/>
+            <TranslateTransform X="0" Y="0" />
           </Canvas.RenderTransform>
-          <Canvas.Resources/>
+          <Canvas.Resources />
           <Canvas Name="Layer_x0020_1">
             <Path xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Name="path828" Fill="#000000">
               <Path.Data>
-                <PathGeometry Figures="M400.54 308.496l114.427 134.517 0.0236223 0.0236223 0.0236223 -0.0236223c16.7364 19.7719 39.3548 51.6857 52.5833 83.5404 7.92529 19.0987 12.5907 38.4454 10.9608 55.8314 -1.7953 19.3231 -10.8545 35.7642 -30.65 46.536 -9.85051 5.36227 -22.2877 9.16547 -37.7485 10.9844 -0.496069 0.0590558 -0.992138 0.0826782 -1.4764 0.0826782l0 0.0236223 -188.554 0 -188.554 0c-0.779537 0 -1.53545 -0.070867 -2.26774 -0.20079 -15.26 -1.86616 -27.5082 -5.62212 -37.1816 -10.8663 -20.0908 -10.8899 -29.1382 -27.4728 -30.7563 -46.9612 -1.45277 -17.4687 3.49611 -36.969 11.7403 -56.3038 14.1262 -33.0831 38.2091 -66.2725 55.17 -86.3751l110.482 -130.821 0 -159.25c-0.389769 -1.7953 -0.826782 -3.54335 -1.28742 -5.24416 -0.614181 -2.23231 -1.29923 -4.45281 -2.06695 -6.64969 -3.95674 -11.4096 -10.0631 -22.7365 -18.3191 -33.6618 -4.35832 -5.77566 -3.20083 -13.9962 2.56302 -18.3546 2.37404 -1.78349 5.14967 -2.6457 7.90167 -2.6457l0 -0.0236223 43.7131 0c-10.4175 -6.46071 -17.3506 -17.9884 -17.3506 -31.1461 0 -20.2325 16.4057 -36.6382 36.6264 -36.6382 20.2325 0 36.6264 16.4057 36.6264 36.6382 0 13.1576 -6.93316 24.6853 -17.3506 31.1461l102.887 0c7.24025 0 13.1222 5.88196 13.1222 13.1222 0 3.55516 -1.40553 6.7678 -3.6969 9.13003 -5.24416 5.98826 -9.56705 12.7679 -13.0986 20.2325 -3.51973 7.42923 -6.30716 15.638 -8.49223 24.4964l0 158.86zm-69.0717 80.0679l86.1389 0 -59.2921 -65.8945c-2.48035 -2.38586 -4.02761 -5.74023 -4.02761 -9.44894l0 -165.132 0 0c0 -1.00395 0.118112 -2.01971 0.354335 -3.02366 2.61027 -11.008 6.11819 -21.4255 10.7009 -31.1106 0.814971 -1.71262 1.66537 -3.38981 2.5394 -5.05518l-96.45 0c3.46067 6.53158 6.35441 13.1931 8.69302 19.9254 0.956705 2.77562 1.81892 5.53944 2.57483 8.30325 0.673237 2.45672 1.2638 4.85439 1.77168 7.193 0.354335 1.19293 0.543314 2.45672 0.543314 3.76776l0 165.156 -0.0236223 0c0 2.98823 -1.01576 6.00007 -3.10634 8.4568l-112.041 134.517c-15.7915 18.7207 -38.1501 49.4652 -51.0597 79.7136 -5.37408 12.6143 -20.0081 44.8234 -2.68114 54.2133 6.85048 3.72052 15.9569 6.42528 27.6854 7.88986l176.341 0 187.904 0c11.634 -1.45277 20.6223 -4.13391 27.3783 -7.80718 14.5041 -7.90167 -4.61817 -43.6186 -8.7757 -53.6227 -1.65356 -3.99218 -3.47248 -7.98435 -5.43314 -11.9647 -0.744104 0.165356 -1.54726 0.259846 -2.31499 0.259846l-116.718 0c-6.61425 0 -12.071 -6.14181 -12.071 -13.6301l0 -0.0118112c0 -7.48828 5.43314 -13.6301 12.071 -13.6301l103.749 0c-6.36622 -10.0041 -13.0513 -19.3349 -19.3231 -27.4137 -0.578747 0.0944894 -1.20474 0.153545 -1.78349 0.153545l-115.041 0c-6.62607 0 -2.07877 -6.14181 -2.07877 -13.6419l0 0c0 -7.50009 5.43314 -13.6301 12.0828 -13.6301l84.2254 0 -24.2483 -28.5004c-1.52364 0.791348 -3.23626 1.22836 -4.98431 1.22836l-103.3 0c-6.61425 0 -12.0828 -6.13 -12.0828 -13.6301l0 0c0 -7.50009 5.43314 -13.6301 12.0828 -13.6301zm-134.789 -254.649c13.9017 0 25.1814 11.2797 25.1814 25.1814 0 13.9136 -11.2797 25.1814 -25.1814 25.1814 -13.9017 0 -25.1814 -11.2679 -25.1814 -25.1814 0 -13.9017 11.2797 -25.1814 25.1814 -25.1814zm-19.4648 -133.927c24.6617 0 44.6462 19.9845 44.6462 44.6344 0 24.6617 -19.9845 44.6462 -44.6462 44.6462 -24.6499 0 -44.6344 -19.9845 -44.6344 -44.6462 0 -24.6499 19.9845 -44.6344 44.6344 -44.6344z" FillRule="NonZero"/>
+                <PathGeometry Figures="M400.54 308.496l114.427 134.517 0.0236223 0.0236223 0.0236223 -0.0236223c16.7364 19.7719 39.3548 51.6857 52.5833 83.5404 7.92529 19.0987 12.5907 38.4454 10.9608 55.8314 -1.7953 19.3231 -10.8545 35.7642 -30.65 46.536 -9.85051 5.36227 -22.2877 9.16547 -37.7485 10.9844 -0.496069 0.0590558 -0.992138 0.0826782 -1.4764 0.0826782l0 0.0236223 -188.554 0 -188.554 0c-0.779537 0 -1.53545 -0.070867 -2.26774 -0.20079 -15.26 -1.86616 -27.5082 -5.62212 -37.1816 -10.8663 -20.0908 -10.8899 -29.1382 -27.4728 -30.7563 -46.9612 -1.45277 -17.4687 3.49611 -36.969 11.7403 -56.3038 14.1262 -33.0831 38.2091 -66.2725 55.17 -86.3751l110.482 -130.821 0 -159.25c-0.389769 -1.7953 -0.826782 -3.54335 -1.28742 -5.24416 -0.614181 -2.23231 -1.29923 -4.45281 -2.06695 -6.64969 -3.95674 -11.4096 -10.0631 -22.7365 -18.3191 -33.6618 -4.35832 -5.77566 -3.20083 -13.9962 2.56302 -18.3546 2.37404 -1.78349 5.14967 -2.6457 7.90167 -2.6457l0 -0.0236223 43.7131 0c-10.4175 -6.46071 -17.3506 -17.9884 -17.3506 -31.1461 0 -20.2325 16.4057 -36.6382 36.6264 -36.6382 20.2325 0 36.6264 16.4057 36.6264 36.6382 0 13.1576 -6.93316 24.6853 -17.3506 31.1461l102.887 0c7.24025 0 13.1222 5.88196 13.1222 13.1222 0 3.55516 -1.40553 6.7678 -3.6969 9.13003 -5.24416 5.98826 -9.56705 12.7679 -13.0986 20.2325 -3.51973 7.42923 -6.30716 15.638 -8.49223 24.4964l0 158.86zm-69.0717 80.0679l86.1389 0 -59.2921 -65.8945c-2.48035 -2.38586 -4.02761 -5.74023 -4.02761 -9.44894l0 -165.132 0 0c0 -1.00395 0.118112 -2.01971 0.354335 -3.02366 2.61027 -11.008 6.11819 -21.4255 10.7009 -31.1106 0.814971 -1.71262 1.66537 -3.38981 2.5394 -5.05518l-96.45 0c3.46067 6.53158 6.35441 13.1931 8.69302 19.9254 0.956705 2.77562 1.81892 5.53944 2.57483 8.30325 0.673237 2.45672 1.2638 4.85439 1.77168 7.193 0.354335 1.19293 0.543314 2.45672 0.543314 3.76776l0 165.156 -0.0236223 0c0 2.98823 -1.01576 6.00007 -3.10634 8.4568l-112.041 134.517c-15.7915 18.7207 -38.1501 49.4652 -51.0597 79.7136 -5.37408 12.6143 -20.0081 44.8234 -2.68114 54.2133 6.85048 3.72052 15.9569 6.42528 27.6854 7.88986l176.341 0 187.904 0c11.634 -1.45277 20.6223 -4.13391 27.3783 -7.80718 14.5041 -7.90167 -4.61817 -43.6186 -8.7757 -53.6227 -1.65356 -3.99218 -3.47248 -7.98435 -5.43314 -11.9647 -0.744104 0.165356 -1.54726 0.259846 -2.31499 0.259846l-116.718 0c-6.61425 0 -12.071 -6.14181 -12.071 -13.6301l0 -0.0118112c0 -7.48828 5.43314 -13.6301 12.071 -13.6301l103.749 0c-6.36622 -10.0041 -13.0513 -19.3349 -19.3231 -27.4137 -0.578747 0.0944894 -1.20474 0.153545 -1.78349 0.153545l-115.041 0c-6.62607 0 -2.07877 -6.14181 -2.07877 -13.6419l0 0c0 -7.50009 5.43314 -13.6301 12.0828 -13.6301l84.2254 0 -24.2483 -28.5004c-1.52364 0.791348 -3.23626 1.22836 -4.98431 1.22836l-103.3 0c-6.61425 0 -12.0828 -6.13 -12.0828 -13.6301l0 0c0 -7.50009 5.43314 -13.6301 12.0828 -13.6301zm-134.789 -254.649c13.9017 0 25.1814 11.2797 25.1814 25.1814 0 13.9136 -11.2797 25.1814 -25.1814 25.1814 -13.9017 0 -25.1814 -11.2679 -25.1814 -25.1814 0 -13.9017 11.2797 -25.1814 25.1814 -25.1814zm-19.4648 -133.927c24.6617 0 44.6462 19.9845 44.6462 44.6344 0 24.6617 -19.9845 44.6462 -44.6462 44.6462 -24.6499 0 -44.6344 -19.9845 -44.6344 -44.6462 0 -24.6499 19.9845 -44.6344 44.6344 -44.6344z" FillRule="NonZero" />
               </Path.Data>
             </Path>
           </Canvas>
@@ -38,25 +38,25 @@
         <Canvas Name="svg1512" Width="25" Height="22">
           <Path Name="inboxdownload" Fill="#FF157EFB">
             <Path.Data>
-              <PathGeometry Figures="M 12 11 8.75 7.75 8 8.5 12.5 13 17 8.5 16.25 7.75 13 11 V 0 h -1 z m 5 2 h 6.775024 v 0 l -4.375 -7 H 14 V 5 h 6 l 5 8 v 1 8 H 0 V 13 L 5 5 h 6 V 6 H 5.5999756 l -4.375 7 H 8 v 2 c 0 1.104569 0.895858 2 1.997392 2 h 5.005216 C 16.105737 17 17 16.11227 17 15 Z" FillRule="NonZero"/>
+              <PathGeometry Figures="M 12 11 8.75 7.75 8 8.5 12.5 13 17 8.5 16.25 7.75 13 11 V 0 h -1 z m 5 2 h 6.775024 v 0 l -4.375 -7 H 14 V 5 h 6 l 5 8 v 1 8 H 0 V 13 L 5 5 h 6 V 6 H 5.5999756 l -4.375 7 H 8 v 2 c 0 1.104569 0.895858 2 1.997392 2 h 5.005216 C 16.105737 17 17 16.11227 17 15 Z" FillRule="NonZero" />
             </Path.Data>
           </Path>
         </Canvas>
       </Viewbox>
       <Style TargetType="Button">
-        <Setter Property="Background" Value="#fafafa"/>
-        <Setter Property="BorderBrush" Value="SlateGray"/>
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="#fafafa" />
+        <Setter Property="BorderBrush" Value="SlateGray" />
+        <Setter Property="BorderThickness" Value="0" />
       </Style>
 
       <Style x:Key="OpaqueHoverButton" TargetType="Button">
         <Style.Triggers>
           <Trigger Property="IsMouseOver" Value="False">
-            <Setter Property="Opacity" Value="0.3"/>
+            <Setter Property="Opacity" Value="0.3" />
           </Trigger>
         </Style.Triggers>
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="Button">
@@ -71,25 +71,25 @@
   </Window.Resources>
   <Grid>
     <Grid.RowDefinitions>
-      <RowDefinition Height="1*"/>
-      <RowDefinition Height="1*"/>
-      <RowDefinition Height="6*"/>
+      <RowDefinition Height="1*" />
+      <RowDefinition Height="1*" />
+      <RowDefinition Height="6*" />
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="5*"/>
-      <ColumnDefinition Width="3*"/>
-      <ColumnDefinition Width="5*"/>
+      <ColumnDefinition Width="5*" />
+      <ColumnDefinition Width="3*" />
+      <ColumnDefinition Width="5*" />
     </Grid.ColumnDefinitions>
     <Button Name="BtnImport" Grid.RowSpan="2" BorderThickness="0 1 0 0" ToolTip="파일을 복사하고 내용을 추출합니다"
             Background="{Binding DefaultOperation, Mode=OneWay, Converter={local:AzureIfEqualConverter}, ConverterParameter={x:Static local:Operation.Import}}"
             Click="AskAndImport">
       <Button.InputBindings>
-        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Import}"/>
+        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Import}" />
       </Button.InputBindings>
       <DockPanel>
-        <TextBlock Text="파일 가져오기 또는 드래그" HorizontalAlignment="Center" DockPanel.Dock="Bottom"/>
+        <TextBlock Text="파일 가져오기 또는 드래그" HorizontalAlignment="Center" DockPanel.Dock="Bottom" />
         <Border Padding="3">
-          <StaticResource ResourceKey="Import"/>
+          <StaticResource ResourceKey="Import" />
         </Border>
       </DockPanel>
     </Button>
@@ -97,45 +97,44 @@
             Background="{Binding DefaultOperation, Mode=OneWay, Converter={local:AzureIfEqualConverter}, ConverterParameter={x:Static local:Operation.Translate}}"
             Command="{Binding OperateCommand}" CommandParameter="{x:Static local:Operation.Translate}">
       <Button.InputBindings>
-        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Translate}"/>
+        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Translate}" />
       </Button.InputBindings>
     </Button>
     <Button Name="BtnOnestop" Content="원터치" Grid.Column="1" Grid.Row="1" BorderThickness="1 1 0 0"
             ToolTip="나머지 세 개 버튼을 순서대로 실행합니다.&#x0a;다른 버튼을 우클릭해 드래그 시 기본 행동을 바꿀 수 있습니다."
             Background="{Binding DefaultOperation, Mode=OneWay, Converter={local:AzureIfEqualConverter}, ConverterParameter={x:Static local:Operation.Onestop}}"
-            Command="{Binding OperateCommand}" CommandParameter="{x:Static local:Operation.Onestop}"
-            >
+            Command="{Binding OperateCommand}" CommandParameter="{x:Static local:Operation.Onestop}">
       <Button.InputBindings>
-        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Onestop}"/>
+        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Onestop}" />
       </Button.InputBindings>
     </Button>
     <Button Name="BtnExport" Grid.Column="2" Grid.RowSpan="2" BorderThickness="1 1 0 0" ToolTip="번역한 결과를 원래 파일에 합칩니다"
             Background="{Binding DefaultOperation, Mode=OneWay, Converter={local:AzureIfEqualConverter}, ConverterParameter={x:Static local:Operation.Export}}"
             Command="{Binding OperateCommand}" CommandParameter="{x:Static local:Operation.Export}">
       <Button.InputBindings>
-        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Export}"/>
+        <MouseBinding Gesture="RightClick" Command="{Binding PinCommand}" CommandParameter="{x:Static local:Operation.Export}" />
       </Button.InputBindings>
       <DockPanel>
-        <TextBlock Text="번역 결과 내보내기" HorizontalAlignment="Center" DockPanel.Dock="Bottom"/>
+        <TextBlock Text="번역 결과 내보내기" HorizontalAlignment="Center" DockPanel.Dock="Bottom" />
         <Border Padding="3">
-          <StaticResource ResourceKey="Export"/>
+          <StaticResource ResourceKey="Export" />
         </Border>
       </DockPanel>
     </Button>
     <RichTextBox Name="TbLog" Grid.Row="2" Grid.ColumnSpan="3" VerticalScrollBarVisibility="Auto" BorderThickness="0 1 0 0"
                  AcceptsReturn="True" PreviewDragOver="TbLogOnPreviewDragOver">
       <RichTextBox.CommandBindings>
-        <CommandBinding Command="{x:Static ApplicationCommands.Copy}" Executed="CopyTextCommand"/>
+        <CommandBinding Command="{x:Static ApplicationCommands.Copy}" Executed="CopyTextCommand" />
       </RichTextBox.CommandBindings>
       <RichTextBox.Resources>
         <Style TargetType="{x:Type Paragraph}">
-          <Setter Property="Margin" Value="0"/>
+          <Setter Property="Margin" Value="0" />
         </Style>
       </RichTextBox.Resources>
     </RichTextBox>
     <Button Grid.Row="2" Grid.Column="2" Width="30" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top"
             Click="OnFlaskClick" ToolTip="설정 디버그 창을 엽니다 (`)" Style="{StaticResource OpaqueHoverButton}">
-      <StaticResource ResourceKey="Flask"/>
+      <StaticResource ResourceKey="Flask" />
     </Button>
   </Grid>
 </Window>

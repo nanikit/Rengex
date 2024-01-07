@@ -1,4 +1,5 @@
 namespace Rengex.View {
+
   using System;
   using System.Linq;
   using System.Text;
@@ -10,7 +11,6 @@ namespace Rengex.View {
   /// Interaction logic for MainWindow.xaml
   /// </summary>
   public partial class MainWindow : Window {
-
     private readonly MainWindowVM vm;
 
     public MainWindow() {
@@ -23,6 +23,9 @@ namespace Rengex.View {
       InitializeComponent();
     }
 
+    private static DebugWindow? DebugWindow =>
+      Application.Current.Windows.OfType<DebugWindow>().FirstOrDefault();
+
     protected override void OnPreviewKeyDown(KeyEventArgs e) {
       if (e.Key == Key.OemTilde) {
         ShowRegexDebugWindow();
@@ -33,29 +36,32 @@ namespace Rengex.View {
       }
     }
 
-    private static DebugWindow? DebugWindow =>
-      Application.Current.Windows.OfType<DebugWindow>().FirstOrDefault();
-
-    private void OnFlaskClick(object sender, RoutedEventArgs e) {
-      ShowRegexDebugWindow();
+    private void AppendException(Exception e, string info = null) {
+      WithAutoScroll(() => {
+        TbLog.AppendText($"오류: {info ?? e.Message}");
+        var r = new Run($"\r\n{e}") {
+          FontSize = 1
+        };
+        var lastPara = TbLog.Document.Blocks.LastBlock as Paragraph;
+        lastPara.Inlines.Add(new Span(r));
+        lastPara.Inlines.Add(new Run("\r\n"));
+      });
     }
 
-    private void ShowRegexDebugWindow() {
-      Window? window = DebugWindow;
-      if (window == null) {
-        new DebugWindow(vm.dotConfig).Show();
-      }
-      else {
-        _ = window.Activate();
-      }
+    private void AppendProgress(Jp2KrTranslationVM tvm) {
+      var control = new WorkProgress(tvm);
+      var container = new BlockUIContainer(control);
+      WithAutoScroll(() => TbLog.Document.Blocks.Add(container));
     }
 
-    private void OnDrop(object sender, DragEventArgs e) {
-      if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
-        return;
-      }
-      string[]? paths = e.Data.GetData(DataFormats.FileDrop) as string[];
-      vm.RunDefaultOperation(paths);
+    private void AppendText(string res) {
+      WithAutoScroll(() => {
+        TbLog.AppendText(res);
+      });
+    }
+
+    private void AskAndImport(object sender, RoutedEventArgs e) {
+      vm.AskAndImport();
     }
 
     private void CopyTextCommand(object sender, ExecutedRoutedEventArgs ea) {
@@ -99,8 +105,53 @@ namespace Rengex.View {
       ea.Handled = true;
     }
 
+    private void LogAdded(object obj) {
+      switch (obj) {
+      case string s:
+        AppendText(s);
+        break;
+
+      case Exception e:
+        AppendException(e);
+        break;
+
+      case Jp2KrTranslationVM tvm:
+        AppendProgress(tvm);
+        break;
+
+      default:
+        throw new Exception("unexpected argument");
+      }
+    }
+
+    private void OnDrop(object sender, DragEventArgs e) {
+      if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
+        return;
+      }
+      string[]? paths = e.Data.GetData(DataFormats.FileDrop) as string[];
+      vm.RunDefaultOperation(paths);
+    }
+
+    private void OnFlaskClick(object sender, RoutedEventArgs e) {
+      ShowRegexDebugWindow();
+    }
+
     private void Post(Action action) {
       _ = Dispatcher.BeginInvoke(action);
+    }
+
+    private void ShowRegexDebugWindow() {
+      Window? window = DebugWindow;
+      if (window == null) {
+        new DebugWindow(vm.dotConfig).Show();
+      }
+      else {
+        _ = window.Activate();
+      }
+    }
+
+    private void TbLogOnPreviewDragOver(object sender, DragEventArgs e) {
+      e.Handled = true;
     }
 
     private void WithAutoScroll(Action action) {
@@ -112,54 +163,6 @@ namespace Rengex.View {
           TbLog.ScrollToEnd();
         }
       });
-    }
-
-    private void LogAdded(object obj) {
-      switch (obj) {
-        case string s:
-          AppendText(s);
-          break;
-        case Exception e:
-          AppendException(e);
-          break;
-        case Jp2KrTranslationVM tvm:
-          AppendProgress(tvm);
-          break;
-        default:
-          throw new Exception("unexpected argument");
-      }
-    }
-
-    private void AppendText(string res) {
-      WithAutoScroll(() => {
-        TbLog.AppendText(res);
-      });
-    }
-
-    private void AppendProgress(Jp2KrTranslationVM tvm) {
-      var control = new WorkProgress(tvm);
-      var container = new BlockUIContainer(control);
-      WithAutoScroll(() => TbLog.Document.Blocks.Add(container));
-    }
-
-    private void AppendException(Exception e, string info = null) {
-      WithAutoScroll(() => {
-        TbLog.AppendText($"오류: {info ?? e.Message}");
-        var r = new Run($"\r\n{e}") {
-          FontSize = 1
-        };
-        var lastPara = TbLog.Document.Blocks.LastBlock as Paragraph;
-        lastPara.Inlines.Add(new Span(r));
-        lastPara.Inlines.Add(new Run("\r\n"));
-      });
-    }
-
-    private void TbLogOnPreviewDragOver(object sender, DragEventArgs e) {
-      e.Handled = true;
-    }
-
-    private void AskAndImport(object sender, RoutedEventArgs e) {
-      vm.AskAndImport();
     }
   }
 }

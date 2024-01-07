@@ -1,4 +1,5 @@
 namespace Rengex {
+
   using Rengex.Translator;
   using System;
   using System.IO;
@@ -11,6 +12,7 @@ namespace Rengex {
   /// Interaction logic for App.xaml
   /// </summary>
   public partial class Program : Application {
+
     [STAThread]
     public static void Main(string[] args) {
       try {

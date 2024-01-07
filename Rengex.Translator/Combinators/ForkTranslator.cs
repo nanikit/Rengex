@@ -1,18 +1,19 @@
 namespace Rengex.Translator {
-  using Nanikit.Ehnd;
-  using System;
-  using System.Collections.Generic;
-  using System.Threading;
-  using System.Threading.Tasks;
-  using System.Threading.Tasks.Dataflow;
+
+    using Nanikit.Ehnd;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using System.Threading.Tasks.Dataflow;
 
   public class ForkTranslator : ITranslator {
-    private readonly int _poolSize;
-    private readonly Task _managerTask;
-    private readonly List<Task> _workers = new();
-    private readonly List<ITranslator> _translators = new();
-    private readonly BufferBlock<Job> _jobs = new();
     private readonly CancellationTokenSource _cancel = new();
+    private readonly BufferBlock<Job> _jobs = new();
+    private readonly Task _managerTask;
+    private readonly int _poolSize;
+    private readonly List<ITranslator> _translators = new();
+    private readonly List<Task> _workers = new();
     private bool _isDisposed;
     private DateTime _lastSpawnTime;
 
@@ -23,34 +24,35 @@ namespace Rengex.Translator {
       _managerTask = Task.Run(() => Manager());
     }
 
+    public void Dispose() {
+      Dispose(true);
+      GC.SuppressFinalize(this);
+    }
+
     public Task<string> Translate(string source) {
       var job = new Job(source);
       _ = _jobs.Post(job);
       return job.Client.Task;
     }
 
-    /// <summary>
-    /// Monitor translation completion at most 3 trials.
-    /// </summary>
-    private async Task Worker(ITranslator translator, Job job) {
-      try {
-        string res = await translator.Translate(job.Source).ConfigureAwait(false);
-        _ = job.Client.TrySetResult(res);
-      }
-      catch (Exception exception) {
-        if (exception is EhndNotFoundException) {
-          _ = job.Client.TrySetException(exception);
-          return;
-        }
-        if (job.RetryCount < 3) {
-          job.RetryCount++;
-          _ = _jobs.Post(job);
-        }
-        else {
-          _ = job.Client.TrySetException(exception);
-          throw;
+    protected virtual void Dispose(bool disposing) {
+      if (disposing) {
+        if (!_isDisposed) {
+          _isDisposed = true;
+          _cancel.Cancel();
+          _cancel.Dispose();
         }
       }
+    }
+
+    private async Task<Job?> GetJobOrDefault() {
+      var dispatch = _jobs.ReceiveAsync(_cancel!.Token);
+      _ = await Task.WhenAny(dispatch).ConfigureAwait(false);
+      if (_cancel?.IsCancellationRequested ?? true) {
+        return null;
+      }
+      var job = await dispatch.ConfigureAwait(false);
+      return job;
     }
 
     private async Task Manager() {
@@ -85,31 +87,6 @@ namespace Rengex.Translator {
       }
     }
 
-    private async Task<Job?> GetJobOrDefault() {
-      var dispatch = _jobs.ReceiveAsync(_cancel!.Token);
-      _ = await Task.WhenAny(dispatch).ConfigureAwait(false);
-      if (_cancel?.IsCancellationRequested ?? true) {
-        return null;
-      }
-      var job = await dispatch.ConfigureAwait(false);
-      return job;
-    }
-
-    private async Task ScheduleAndWaitFreeWorker(Job job) {
-      if (ScheduleAtCompleted(job) || ScheduleWithMoreWorker(job)) {
-        return;
-      }
-      await ScheduleAfterCompletion(job).ConfigureAwait(false);
-    }
-
-    private bool ScheduleWithMoreWorker(Job job) {
-      if (_workers.Count < _translators.Count) {
-        _workers.Add(Worker(_translators[_workers.Count], job));
-        return true;
-      }
-      return false;
-    }
-
     private async Task ScheduleAfterCompletion(Job job) {
       var abort = Task.Delay(TimeSpan.FromDays(10), _cancel!.Token);
       var seats = Task.WhenAny(_workers);
@@ -123,6 +100,13 @@ namespace Rengex.Translator {
       _workers[endedIdx] = Worker(_translators[endedIdx], job);
     }
 
+    private async Task ScheduleAndWaitFreeWorker(Job job) {
+      if (ScheduleAtCompleted(job) || ScheduleWithMoreWorker(job)) {
+        return;
+      }
+      await ScheduleAfterCompletion(job).ConfigureAwait(false);
+    }
+
     private bool ScheduleAtCompleted(Job job) {
       int endedIdx = _workers.FindIndex(x => x.IsCompleted);
       if (endedIdx != -1) {
@@ -132,29 +116,48 @@ namespace Rengex.Translator {
       return false;
     }
 
-    public void Dispose() {
-      Dispose(true);
-      GC.SuppressFinalize(this);
+    private bool ScheduleWithMoreWorker(Job job) {
+      if (_workers.Count < _translators.Count) {
+        _workers.Add(Worker(_translators[_workers.Count], job));
+        return true;
+      }
+      return false;
     }
 
-    protected virtual void Dispose(bool disposing) {
-      if (disposing) {
-        if (!_isDisposed) {
-          _isDisposed = true;
-          _cancel.Cancel();
-          _cancel.Dispose();
+    /// <summary>
+    /// Monitor translation completion at most 3 trials.
+    /// </summary>
+    private async Task Worker(ITranslator translator, Job job) {
+      try {
+        string res = await translator.Translate(job.Source).ConfigureAwait(false);
+        _ = job.Client.TrySetResult(res);
+      }
+      catch (Exception exception) {
+        if (exception is EhndNotFoundException) {
+          _ = job.Client.TrySetException(exception);
+          return;
+        }
+        if (job.RetryCount < 3) {
+          job.RetryCount++;
+          _ = _jobs.Post(job);
+        }
+        else {
+          _ = job.Client.TrySetException(exception);
+          throw;
         }
       }
     }
 
     private class Job {
+      public TaskCompletionSource<string> Client = new();
+
+      public int RetryCount;
+
+      public string Source;
+
       public Job(string source) {
         Source = source;
       }
-
-      public TaskCompletionSource<string> Client = new();
-      public string Source;
-      public int RetryCount;
     }
   }
 }

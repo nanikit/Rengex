@@ -1,4 +1,5 @@
 namespace Rengex {
+
   using Nanikit.Ehnd;
   using Rengex.Helper;
   using Rengex.Model;
@@ -13,17 +14,6 @@ namespace Rengex {
   using System.Windows.Media;
 
   public class Jp2KrDesignVM : Jp2KrTranslationVM {
-    public class TestLabelProgressVM : ILabelProgressVM {
-      public string Label => "테스트";
-
-      public double Value => 50;
-
-      public Brush Foreground => new SolidColorBrush(Colors.PaleGreen);
-
-      public void Cancel() {
-      }
-    }
-    public new TestLabelProgressVM Progress { get; set; }
 
     public Jp2KrDesignVM() : base(null, null) {
       Ongoings.Add(new TestLabelProgressVM());
@@ -31,26 +21,31 @@ namespace Rengex {
       Faults.Add(new TestLabelProgressVM());
       Progress = new TestLabelProgressVM();
     }
+
+    public new TestLabelProgressVM Progress { get; set; }
+
+    public class TestLabelProgressVM : ILabelProgressVM {
+      public Brush Foreground => new SolidColorBrush(Colors.PaleGreen);
+      public string Label => "테스트";
+
+      public double Value => 50;
+
+      public void Cancel() {
+      }
+    }
   }
 
   public class Jp2KrTranslationVM : ViewModelBase {
     private static readonly int coreCount;
 
-    public ObservableCollection<ILabelProgressVM> Ongoings { get; private set; }
-    public ObservableCollection<ILabelProgressVM> Faults { get; private set; }
-    public List<Exception> Exceptions { get; private set; } = new List<Exception>();
-
-    public LabelProgressVM Progress { get; private set; }
-
     private readonly RegexDotConfiguration dotConfig;
     private readonly List<TranslationUnit>? translations;
-    private string? workKind;
     private EhndTranslator? _selfTranslator;
+    private string? workKind;
 
     static Jp2KrTranslationVM() {
       coreCount = GetCoreCount();
     }
-
 
     /// <summary>
     /// if paths is null, search from metadata folder.
@@ -61,6 +56,16 @@ namespace Rengex {
       Progress = new LabelProgressVM();
       Faults = new ObservableCollection<ILabelProgressVM>();
       Ongoings = new ObservableCollection<ILabelProgressVM>();
+    }
+
+    public List<Exception> Exceptions { get; private set; } = new List<Exception>();
+    public ObservableCollection<ILabelProgressVM> Faults { get; private set; }
+    public ObservableCollection<ILabelProgressVM> Ongoings { get; private set; }
+    public LabelProgressVM Progress { get; private set; }
+
+    public Task ExportTranslation() {
+      workKind = "병합: ";
+      return ParallelForEach(x => new MergeJp2Kr(x));
     }
 
     public Task ImportTranslation() {
@@ -79,11 +84,6 @@ namespace Rengex {
       }
 
       await ParallelForEach(genVm).ConfigureAwait(false);
-    }
-
-    public Task ExportTranslation() {
-      workKind = "병합: ";
-      return ParallelForEach(x => new MergeJp2Kr(x));
     }
 
     public async Task OnestopTranslation() {
@@ -108,12 +108,6 @@ namespace Rengex {
         }
       }
       return coreCount;
-    }
-
-    private IEnumerable<TranslationUnit> WalkForSources(string path) {
-      return ManagedPath
-        .WalkForSources(path)
-        .Select(x => new TranslationUnit(dotConfig, x));
     }
 
     private IEnumerable<TranslationUnit> FindTranslations() {
@@ -152,6 +146,12 @@ namespace Rengex {
           Progress.Label = $"{workKind}{complete} / {translationUnits.Count}";
         }
       });
+    }
+
+    private IEnumerable<TranslationUnit> WalkForSources(string path) {
+      return ManagedPath
+        .WalkForSources(path)
+        .Select(x => new TranslationUnit(dotConfig, x));
     }
   }
 }

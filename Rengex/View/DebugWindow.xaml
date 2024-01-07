@@ -1,4 +1,4 @@
-﻿<Window x:Class="Rengex.DebugWindow"
+<Window x:Class="Rengex.DebugWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -10,12 +10,12 @@
     <TabControl Name="TcConfig" ItemsSource="{Binding Mode=OneTime}">
       <TabControl.ItemTemplate>
         <DataTemplate>
-          <TextBlock Text="{Binding Title, Mode=OneTime}"/>
+          <TextBlock Text="{Binding Title, Mode=OneTime}" />
         </DataTemplate>
       </TabControl.ItemTemplate>
       <TabControl.ContentTemplate>
         <DataTemplate>
-          <TextBox Text="{Binding Content, Mode=OneTime}"/>
+          <TextBox Text="{Binding Content, Mode=OneTime}" />
         </DataTemplate>
       </TabControl.ContentTemplate>
     </TabControl>
@@ -24,8 +24,8 @@
       <Button.Template>
         <ControlTemplate>
           <Grid>
-            <Ellipse Fill="#457abb"/>
-            <TextBlock Text="R" FontSize="27" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <Ellipse Fill="#457abb" />
+            <TextBlock Text="R" FontSize="27" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Grid>
         </ControlTemplate>
       </Button.Template>

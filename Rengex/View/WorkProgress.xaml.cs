@@ -1,11 +1,13 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace Rengex {
+
   /// <summary>
   /// Interaction logic for WorkProgress.xaml
   /// </summary>
   public partial class WorkProgress : UserControl {
+
     public WorkProgress() {
       InitializeComponent();
     }

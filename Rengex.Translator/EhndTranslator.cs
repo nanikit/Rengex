@@ -1,9 +1,10 @@
-﻿using Nanikit.Ehnd;
+using Nanikit.Ehnd;
 using System;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace Rengex.Translator {
+
   public sealed class EhndTranslator : ITranslator {
     private static IEhnd? Instance;
 
@@ -15,15 +16,15 @@ namespace Rengex.Translator {
       Instance = new BatchEhnd(new Ehnd(path));
     }
 
+    public void Dispose() {
+    }
+
     public Task<string> Translate(string source) {
       if (Instance == null) {
         throw new Exception("Assertion failed. Instance is null.");
       }
 
       return Task.Run(() => Instance.TranslateAsync(source));
-    }
-
-    public void Dispose() {
     }
   }
 }

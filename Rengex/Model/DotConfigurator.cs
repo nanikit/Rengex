@@ -1,4 +1,6 @@
 namespace Rengex.Model {
+
+  using Rengex.Helper;
   using System;
   using System.Collections.Generic;
   using System.Globalization;
@@ -7,23 +9,26 @@ namespace Rengex.Model {
   using System.Threading;
   using System.Threading.Tasks;
   using System.Threading.Tasks.Dataflow;
-  using Rengex.Helper;
 
   internal interface IDotConfig<T> {
+
+    /// <summary>
+    /// 다른 설정파일을 제공
+    /// </summary>
+    Func<string, T> ConfigResolver { set; }
+
     /// <summary>
     /// 빌더 메소드. 설정 파일 경로를 주면 설정을 제공.
     /// </summary>
     /// <param name="path">설정 파일 경로</param>
     /// <returns>설정 인스턴스</returns>
     T CreateFromFile(string path);
+
     /// <returns>기본 설정 파일 내용</returns>
     string GetDefaultConfig();
+
     /// <returns>설정 파일의 확장자</returns>
     string GetExtension();
-    /// <summary>
-    /// 다른 설정파일을 제공
-    /// </summary>
-    Func<string, T> ConfigResolver { set; }
   }
 
   internal interface IRegion {
@@ -31,11 +36,10 @@ namespace Rengex.Model {
   }
 
   internal class DebounceWatcher : IDisposable {
-
-    public event FileSystemEventHandler Committed = delegate { };
+    private readonly CancellationTokenSource Cancel = new();
 
     private readonly BufferBlock<FileSystemEventArgs> ChangeQueue = new();
-    private readonly CancellationTokenSource Cancel = new();
+
     private readonly int MsTimeout;
 
     public DebounceWatcher(int msTimeout) {
@@ -49,11 +53,24 @@ namespace Rengex.Model {
       }
     }
 
+    public event FileSystemEventHandler Committed = delegate { };
+
+    public void Dispose() {
+      Dispose(true);
+    }
+
     public void Subscribe(FileSystemWatcher watcher) {
       watcher.Created += ConfigChanged;
       watcher.Deleted += ConfigChanged;
       watcher.Changed += ConfigChanged;
       watcher.Renamed += ConfigChanged;
+    }
+
+    protected void Dispose(bool disposing) {
+      if (disposing) {
+        Cancel.Cancel();
+        Cancel.Dispose();
+      }
     }
 
     private void ConfigChanged(object sender, FileSystemEventArgs fsEvent) {
@@ -86,17 +103,6 @@ namespace Rengex.Model {
 
       return changes.Values;
     }
-
-    public void Dispose() {
-      Dispose(true);
-    }
-
-    protected void Dispose(bool disposing) {
-      if (disposing) {
-        Cancel.Cancel();
-        Cancel.Dispose();
-      }
-    }
   }
 
   /// <summary>
@@ -104,47 +110,18 @@ namespace Rengex.Model {
   /// </summary>
   /// <typeparam name="T">설정 클래스</typeparam>
   internal class DotConfigurator<T> : IDisposable where T : IDotConfig<T>, new() {
-
-    public event Action<FileSystemEventArgs> ConfigReloaded = delegate { };
-    public event Action<FileSystemEventArgs, Exception> Faulted = delegate { };
-    public IEnumerable<string> RegionPaths => Regions.Select(x => x.ToString());
+    private readonly T ConfigBuilder;
 
     /// <summary>
     /// 설정 변경을 탐지하기 위한 감시자.
     /// </summary>
     private readonly DebounceWatcher DebounceWatcher;
 
-    private readonly T ConfigBuilder;
-    private readonly string RootPath;
-    private readonly List<Region> Regions = new();
     private readonly Dictionary<string, Region> RegionDictionary = new();
 
-    public class Region : IComparer<Region> {
-      public string Prefix;
-      public string Suffix;
-      public T Value;
-      public int Priority => Prefix.Length * 1000 + Suffix.Length;
-      public FileSystemWatcher Watcher;
+    private readonly List<Region> Regions = new();
 
-      public Region(T value) {
-        Prefix = "";
-        Suffix = "";
-        Value = value;
-      }
-
-      public Region(string pattern, T value) {
-        Value = value;
-        Prefix = Path.GetDirectoryName(pattern).ToLower() + '\\';
-        int extIdx = pattern.Length - value.GetExtension().Length;
-        Suffix = Path.GetFileName(pattern.Remove(extIdx)).ToLower();
-      }
-
-      public int Compare(Region x, Region y) {
-        return -(x.Priority - y.Priority);
-      }
-
-      public override string ToString() => Prefix + Suffix + Value.GetExtension();
-    }
+    private readonly string RootPath;
 
     /// <summary>
     /// 해당 경로의 모든 설정을 불러오고 변경을 감시함.
@@ -154,7 +131,6 @@ namespace Rengex.Model {
       string path,
       Action<FileSystemEventArgs> reloaded,
       Action<FileSystemEventArgs, Exception> faulted) {
-
       RootPath = Path.GetFullPath(path);
       ConfigReloaded += reloaded;
       Faulted += faulted;
@@ -162,6 +138,16 @@ namespace Rengex.Model {
       DebounceWatcher = GetTimeoutWatcher();
       DebounceWatcher.Committed += FileChanged;
       CacheAllConfigs();
+    }
+
+    public event Action<FileSystemEventArgs> ConfigReloaded = delegate { };
+
+    public event Action<FileSystemEventArgs, Exception> Faulted = delegate { };
+
+    public IEnumerable<string> RegionPaths => Regions.Select(x => x.ToString());
+
+    public void Dispose() {
+      Dispose(true);
     }
 
     public T GetConfiguration(string path) {
@@ -172,12 +158,26 @@ namespace Rengex.Model {
       ).Value;
     }
 
-    private DebounceWatcher GetTimeoutWatcher() {
-      var watcher = new FileSystemWatcher(RootPath, "*" + ConfigBuilder.GetExtension()) {
-        IncludeSubdirectories = true,
-        EnableRaisingEvents = true
+    protected void Dispose(bool disposing) {
+      if (disposing) {
+        DebounceWatcher.Dispose();
+      }
+    }
+
+    private void AddRegion(string path) {
+      var cfg = ConfigBuilder.CreateFromFile(path);
+      cfg.ConfigResolver = ResolveConfig;
+      var region = new Region(path, cfg) {
+        Watcher = new FileSystemWatcher(Path.GetDirectoryName(path), Path.GetFileName(path))
       };
-      return new DebounceWatcher(100, watcher);
+      region.Watcher.EnableRaisingEvents = true;
+      DebounceWatcher.Subscribe(region.Watcher);
+      int idx = Regions.BinarySearch(region, region);
+      if (idx < 0) {
+        idx = ~idx;
+      }
+      Regions.Insert(idx, region);
+      RegionDictionary[path.ToLower()] = region;
     }
 
     private void CacheAllConfigs() {
@@ -200,18 +200,6 @@ namespace Rengex.Model {
       }
     }
 
-    private T ResolveConfig(string path) {
-      return RegionDictionary[path.ToLower()].Value;
-    }
-
-    private void WriteDefaultConfig(string extension) {
-      string top = Path.Combine(RootPath, extension);
-      if (!File.Exists(top)) {
-        Util.PrecreateDirectory(top);
-        File.WriteAllText(top, ConfigBuilder.GetDefaultConfig());
-      }
-    }
-
     private void FileChanged(object sender, FileSystemEventArgs fse) {
       if (Regions == null) {
         return;
@@ -225,6 +213,14 @@ namespace Rengex.Model {
       }
     }
 
+    private DebounceWatcher GetTimeoutWatcher() {
+      var watcher = new FileSystemWatcher(RootPath, "*" + ConfigBuilder.GetExtension()) {
+        IncludeSubdirectories = true,
+        EnableRaisingEvents = true
+      };
+      return new DebounceWatcher(100, watcher);
+    }
+
     private void ReflectDelta(FileSystemEventArgs eventArgs) {
       switch (eventArgs.ChangeType) {
       case WatcherChangeTypes.Changed:
@@ -235,12 +231,15 @@ namespace Rengex.Model {
           AddRegion(eventArgs.FullPath);
         }
         break;
+
       case WatcherChangeTypes.Deleted:
         RemoveRegion(eventArgs.FullPath);
         break;
+
       case WatcherChangeTypes.Created:
         AddRegion(eventArgs.FullPath);
         break;
+
       case WatcherChangeTypes.Renamed:
         var renameArgs = eventArgs as RenamedEventArgs;
         RemoveRegion(renameArgs.OldFullPath);
@@ -251,22 +250,6 @@ namespace Rengex.Model {
       }
     }
 
-    private void AddRegion(string path) {
-      var cfg = ConfigBuilder.CreateFromFile(path);
-      cfg.ConfigResolver = ResolveConfig;
-      var region = new Region(path, cfg) {
-        Watcher = new FileSystemWatcher(Path.GetDirectoryName(path), Path.GetFileName(path))
-      };
-      region.Watcher.EnableRaisingEvents = true;
-      DebounceWatcher.Subscribe(region.Watcher);
-      int idx = Regions.BinarySearch(region, region);
-      if (idx < 0) {
-        idx = ~idx;
-      }
-      Regions.Insert(idx, region);
-      RegionDictionary[path.ToLower()] = region;
-    }
-
     private void RemoveRegion(string path) {
       if (RegionDictionary.TryGetValue(path.ToLower(), out var region)) {
         region.Watcher?.Dispose();
@@ -275,14 +258,44 @@ namespace Rengex.Model {
       }
     }
 
-    public void Dispose() {
-      Dispose(true);
+    private T ResolveConfig(string path) {
+      return RegionDictionary[path.ToLower()].Value;
     }
 
-    protected void Dispose(bool disposing) {
-      if (disposing) {
-        DebounceWatcher.Dispose();
+    private void WriteDefaultConfig(string extension) {
+      string top = Path.Combine(RootPath, extension);
+      if (!File.Exists(top)) {
+        Util.PrecreateDirectory(top);
+        File.WriteAllText(top, ConfigBuilder.GetDefaultConfig());
       }
+    }
+
+    public class Region : IComparer<Region> {
+      public string Prefix;
+      public string Suffix;
+      public T Value;
+      public FileSystemWatcher Watcher;
+
+      public Region(T value) {
+        Prefix = "";
+        Suffix = "";
+        Value = value;
+      }
+
+      public Region(string pattern, T value) {
+        Value = value;
+        Prefix = Path.GetDirectoryName(pattern).ToLower() + '\\';
+        int extIdx = pattern.Length - value.GetExtension().Length;
+        Suffix = Path.GetFileName(pattern.Remove(extIdx)).ToLower();
+      }
+
+      public int Priority => Prefix.Length * 1000 + Suffix.Length;
+
+      public int Compare(Region x, Region y) {
+        return -(x.Priority - y.Priority);
+      }
+
+      public override string ToString() => Prefix + Suffix + Value.GetExtension();
     }
   }
 }
