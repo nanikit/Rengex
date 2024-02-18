@@ -119,7 +119,7 @@ namespace Rengex.Model {
     }
 
     public Task CopyToSourceDirectory() {
-      _ = Util.PrecreateDirectory(OriginalPath);
+      _ = Util.PrepareDirectory(OriginalPath);
       return Util.CopyFileAsync(ExternalPath!, OriginalPath);
     }
 

@@ -265,7 +265,7 @@ namespace Rengex.Model {
     private void WriteDefaultConfig(string extension) {
       string top = Path.Combine(RootPath, extension);
       if (!File.Exists(top)) {
-        Util.PrecreateDirectory(top);
+        Util.PrepareDirectory(top);
         File.WriteAllText(top, ConfigBuilder.GetDefaultConfig());
       }
     }

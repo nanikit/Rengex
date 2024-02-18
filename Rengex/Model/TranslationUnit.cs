@@ -21,7 +21,7 @@ namespace Rengex.Model {
       using var original = File.OpenRead(ManagedPath.OriginalPath);
       using var meta = File.OpenText(ManagedPath.MetadataPath);
       using var target = File.OpenText(ManagedPath.TargetPath);
-      using var result = File.Create(Util.PrecreateDirectory(ManagedPath.ResultPath));
+      using var result = File.Create(Util.PrepareDirectory(ManagedPath.ResultPath));
 
       await reconstructor.Merge(original, meta, target, result).ConfigureAwait(false);
     }
@@ -49,7 +49,7 @@ namespace Rengex.Model {
 
       using var meta = File.OpenText(ManagedPath.MetadataPath);
       using var jp = File.OpenText(ManagedPath.SourcePath);
-      using var kr = File.CreateText(Util.PrecreateDirectory(ManagedPath.TargetPath));
+      using var kr = File.CreateText(Util.PrepareDirectory(ManagedPath.TargetPath));
       var reconstructor = new Reconstructor(DotConfig.GetConfiguration(ManagedPath.OriginalPath));
       await reconstructor.Translate(meta, jp, translator, kr).ConfigureAwait(false);
     }

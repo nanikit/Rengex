@@ -53,7 +53,7 @@ namespace Rengex.Helper {
     }
 
     public static StreamWriter GetReadSharedWriter(string path) {
-      var file = File.Open(Util.PrecreateDirectory(path), FileMode.Create, FileAccess.Write, FileShare.Read);
+      var file = File.Open(Util.PrepareDirectory(path), FileMode.Create, FileAccess.Write, FileShare.Read);
       file.SetLength(0);
       return new StreamWriter(file, Encoding.UTF8);
     }

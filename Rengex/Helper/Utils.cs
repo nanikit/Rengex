@@ -49,7 +49,7 @@ namespace Rengex.Helper {
       return ellipsisPath;
     }
 
-    public static string PrecreateDirectory(string path) {
+    public static string PrepareDirectory(string path) {
       string? directory = Path.GetDirectoryName(path);
       if (directory != null) {
         Directory.CreateDirectory(directory);
