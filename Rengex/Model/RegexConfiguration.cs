@@ -272,24 +272,9 @@ namespace Rengex.Model {
     }
   }
 
-  public class TextSpan {
-    public string? Value;
-
-    public TextSpan(long offset, long length, string? value, string? name) {
-      Offset = offset;
-      Length = length;
-      Value = value;
-      Title = name;
-    }
-
+  public record TextSpan(long Offset, long Length, string? Name, string? Value) {
+    public string? Value { get; set; } = Value;
     public long End => Offset + Length;
-    public long Length { get; set; }
-    public long Offset { get; set; }
-    public string? Title { get; private set; }
-
-    public string Extract() {
-      return Value;
-    }
   }
 
   internal class ExtendedMatcher {
@@ -375,23 +360,21 @@ namespace Rengex.Model {
           string proc = group.Name[0..^2] + 'F';
           var spans = Matches(capture.Value, Procedures[proc]);
           foreach (var span in spans) {
-            span.Offset += capture.Index;
-            yield return span;
+            yield return span with { Offset = span.Offset + capture.Index };
           }
         }
         else if (group.Name.EndsWith('C')) {
           string proc = group.Name[0..^1] + 'F';
-          var mch = Procedures[proc].Match(capture.Value);
-          var spans = Match(mch);
+          var match = Procedures[proc].Match(capture.Value);
+          var spans = Match(match);
           foreach (var span in spans) {
-            span.Offset += capture.Index;
-            yield return span;
+            yield return span with { Offset = span.Offset + capture.Index };
           }
         }
         else if (!group.Name.All(char.IsDigit)) {
           yield return new TextSpan(
             capture.Index, capture.Length,
-            capture.Value, group.Name);
+            group.Name, capture.Value);
         }
       }
     }

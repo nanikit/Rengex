@@ -46,7 +46,7 @@ namespace Rengex.Model {
       var substitution = new SpanPairReader(source);
       foreach (var span in metaReader.GetSpans()) {
         string extracted = substitution.ReadCorrespondingSpan(span);
-        string replaced = _configuration.PreReplace(span.Title ?? "", extracted);
+        string replaced = _configuration.PreReplace(span.Name ?? "", extracted);
         preprocessed.AppendLine(replaced);
       }
 
@@ -56,7 +56,7 @@ namespace Rengex.Model {
 
     private async Task<string> ApplyPostProcess(TextSpan span, CharCountingReader src, string translation) {
       string? original = await src.ReadStringAsync((int)span.Length).ConfigureAwait(false);
-      return _configuration.PostReplace(span.Title ?? "", original ?? "", translation);
+      return _configuration.PostReplace(span.Name ?? "", original ?? "", translation);
     }
 
     private async Task CompileTranslation(string original, MetadataCsvReader meta, TextReader target, TextWriter result) {
@@ -98,7 +98,7 @@ namespace Rengex.Model {
         string value = span.Value;
         string newLines = new('\n', TextUtils.CountLines(value));
 
-        metaWrite = ChainMeta($"{span.Offset},{span.Length},{span.Title}{newLines}");
+        metaWrite = ChainMeta($"{span.Offset},{span.Length},{span.Name}{newLines}");
         sourceWrite = ChainSource(value);
       }
 

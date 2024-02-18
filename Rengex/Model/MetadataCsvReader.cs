@@ -46,17 +46,17 @@ namespace Rengex.Model {
 
     private TextSpan? MakeSpan() {
       string[] csv = (_base.ReadLine() ?? "").Split(',');
-      if (csv.Length < 1 || !int.TryParse(csv[0], out int off)) {
+      if (csv.Length < 1 || !int.TryParse(csv[0], out int offset)) {
         return null;
       }
-      else if (csv.Length < 2 || !int.TryParse(csv[1], out int len)) {
-        return new TextSpan(off, 0, null, null);
+      else if (csv.Length < 2 || !int.TryParse(csv[1], out int length)) {
+        return new TextSpan(offset, 0, null, null);
       }
       else if (csv.Length < 3) {
-        return new TextSpan(off, len, null, null);
+        return new TextSpan(offset, length, null, null);
       }
       else {
-        return new TextSpan(off, len, null, csv[2]);
+        return new TextSpan(offset, length, csv[2], null);
       }
     }
   }
