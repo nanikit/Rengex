@@ -8,7 +8,7 @@
     <Version>1.0.0</Version>
     <Platforms>x86</Platforms>
     <PlatformTarget>x86</PlatformTarget>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 

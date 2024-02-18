@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
     <IsPackable>false</IsPackable>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
     <Platforms>x86</Platforms>
     <PlatformTarget>x86</PlatformTarget>
