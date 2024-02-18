@@ -110,24 +110,19 @@ namespace Rengex.Model {
       return ret;
     }
 
-    internal class PostprocessPattern : IReplacer {
-      private readonly ReplacePattern Pat;
-
-      public PostprocessPattern(ReplacePattern pat) {
-        Pat = pat;
-      }
+    internal class PostprocessPattern(ReplacePattern pattern) : IReplacer {
 
       public string Postprocess(string meta, string trans) {
-        if (!Pat.Extended) {
-          return Pat.Original.Replace(trans, Pat.Replace);
+        if (!pattern.Extended) {
+          return pattern.Original.Replace(trans, pattern.Replace);
         }
 
         string from = $"{trans}\0{meta}";
-        string to = Pat.Original.Replace(from, (match) => {
+        string to = pattern.Original.Replace(from, (match) => {
           bool isStartInRange = match.Index <= trans.Length;
           bool isEndInRange = match.Index + match.Length <= from.Length;
           bool isInRange = isStartInRange && isEndInRange;
-          return isInRange ? match.Result(Pat.Replace) : match.Value;
+          return isInRange ? match.Result(pattern.Replace) : match.Value;
         });
         return to[..(to.Length - meta.Length - 1)];
       }
@@ -137,28 +132,23 @@ namespace Rengex.Model {
       }
     }
 
-    internal class PreprocessPattern : IReplacer {
-      private readonly ReplacePattern Pat;
-
-      public PreprocessPattern(ReplacePattern pat) {
-        Pat = pat;
-      }
+    internal class PreprocessPattern(ReplacePattern pattern) : IReplacer {
 
       public string Postprocess(string meta, string trans) {
         return trans;
       }
 
       public string Preprocess(string meta, string trans) {
-        if (!Pat.Extended) {
-          return Pat.Original.Replace(trans, Pat.Replace);
+        if (!pattern.Extended) {
+          return pattern.Original.Replace(trans, pattern.Replace);
         }
 
         string from = $"{trans}\0{meta}";
-        string to = Pat.Original.Replace(from, (match) => {
+        string to = pattern.Original.Replace(from, (match) => {
           bool isStartInRange = match.Index <= trans.Length;
           bool isEndInRange = match.Index + match.Length <= from.Length;
           bool isInRange = isStartInRange && isEndInRange;
-          return isInRange ? match.Result(Pat.Replace) : match.Value;
+          return isInRange ? match.Result(pattern.Replace) : match.Value;
         });
         return to[..(to.Length - meta.Length - 1)];
       }
@@ -389,7 +379,7 @@ namespace Rengex.Model {
             yield return span;
           }
         }
-        else if (group.Name.EndsWith("C")) {
+        else if (group.Name.EndsWith('C')) {
           string proc = group.Name[0..^1] + 'F';
           var mch = Procedures[proc].Match(capture.Value);
           var spans = Match(mch);
@@ -398,7 +388,7 @@ namespace Rengex.Model {
             yield return span;
           }
         }
-        else if (!group.Name.All(c => char.IsDigit(c))) {
+        else if (!group.Name.All(char.IsDigit)) {
           yield return new TextSpan(
             capture.Index, capture.Length,
             capture.Value, group.Name);

@@ -136,14 +136,8 @@ namespace Rengex.Helper {
     }
   }
 
-  internal class CharCountingReader {
-    private readonly TextReader _base;
-    private char[] _buffer;
-
-    public CharCountingReader(TextReader reader, char[]? buffer = null) {
-      _base = reader;
-      _buffer = buffer ?? new char[2048];
-    }
+  internal class CharCountingReader(TextReader reader, char[]? buffer = null) {
+    private char[] _buffer = buffer ?? new char[2048];
 
     public int Position { get; private set; }
 
@@ -152,7 +146,7 @@ namespace Rengex.Helper {
         _buffer = new char[length];
       }
 
-      int read = await _base.ReadAsync(_buffer, 0, length).ConfigureAwait(false);
+      int read = await reader.ReadAsync(_buffer, 0, length).ConfigureAwait(false);
       Position += read;
 
       return read == length ? new string(_buffer, 0, length) : null;
@@ -161,7 +155,7 @@ namespace Rengex.Helper {
     public async Task<int> TextCopyTo(TextWriter destination, int length) {
       int remain = length;
       while (remain > 0) {
-        int read = await _base.ReadAsync(_buffer, 0, Math.Min(remain, _buffer.Length)).ConfigureAwait(false);
+        int read = await reader.ReadAsync(_buffer, 0, Math.Min(remain, _buffer.Length)).ConfigureAwait(false);
         if (read <= 0) {
           break;
         }
@@ -177,23 +171,14 @@ namespace Rengex.Helper {
 
   internal class StringWithCodePage {
 
-    public StringWithCodePage(string content, Encoding encoding) {
-      Content = content;
-      Encoding = encoding;
-    }
-
-    public string Content { get; set; }
-
-    public Encoding Encoding { get; set; }
-
     public static async Task<(string Text, Encoding Encoding)?> ReadAllTextWithDetectionAsync(Stream stream) {
-      string[] encodingNames = new string[] {
+      string[] encodingNames = [
         "utf-8",
         "shift_jis",
         "ks_c_5601-1987",
         "utf-16",
         "unicodeFFFE",
-      };
+      ];
       var encoderFallback = EncoderFallback.ExceptionFallback;
       var decoderFallback = DecoderFallback.ExceptionFallback;
       foreach (string name in encodingNames) {

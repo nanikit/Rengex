@@ -44,7 +44,7 @@ namespace Rengex.Helper {
 
     public static string GetEllipsisPath(string path, int len) {
       string ellipsisPath = path.Length > len
-        ? $"...{path.Substring(path.Length - len)}"
+        ? $"...{path[^len..]}"
         : path;
       return ellipsisPath;
     }
@@ -58,44 +58,15 @@ namespace Rengex.Helper {
     }
   }
 
-  public class RelayCommand : ICommand {
-    private readonly Func<bool> _canExecute;
-    private readonly Action _execute;
+  /// <summary>
+  /// Creates a new command.
+  /// </summary>
+  /// <param name="execute">The execution logic.</param>
+  /// <param name="canExecute">The execution status logic.</param>
+  public class RelayCommand<T>(Action<T> execute, Predicate<T>? canExecute = null) : ICommand {
+    private readonly Predicate<T> _canExecute = canExecute ?? (_ => true);
 
-    public RelayCommand(Action execute, Func<bool>? canExecute = null) {
-      _execute = execute;
-      _canExecute = canExecute ?? (() => true);
-    }
-
-    public event EventHandler? CanExecuteChanged;
-
-    public bool CanExecute(object? parameter) {
-      return _canExecute();
-    }
-
-    public void Execute(object? parameter) {
-      _execute();
-    }
-
-    public void NotifyCanExecute() {
-      CanExecuteChanged?.Invoke(null, new EventArgs());
-    }
-  }
-
-  public class RelayCommand<T> : ICommand {
-    private readonly Predicate<T> _canExecute;
-
-    private readonly Action<T> _execute;
-
-    /// <summary>
-    /// Creates a new command.
-    /// </summary>
-    /// <param name="execute">The execution logic.</param>
-    /// <param name="canExecute">The execution status logic.</param>
-    public RelayCommand(Action<T> execute, Predicate<T>? canExecute = null) {
-      _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-      _canExecute = canExecute ?? (_ => true);
-    }
+    private readonly Action<T> _execute = execute ?? throw new ArgumentNullException(nameof(execute));
 
     public void NotifyCanExecute() {
       CanExecuteChanged?.Invoke(null, new EventArgs());
@@ -117,7 +88,7 @@ namespace Rengex.Helper {
     ///true if this command can be executed; otherwise, false.
     ///</returns>
     public bool CanExecute(object? parameter) {
-      return parameter is T t ? _canExecute(t) : false;
+      return parameter is T t && _canExecute(t);
     }
 
     ///<summary>

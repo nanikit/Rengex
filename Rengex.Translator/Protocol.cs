@@ -9,7 +9,7 @@ namespace Rengex.Translator {
   public static class SerialUtility {
 
     public static byte[] GetPrefixedSerial(object o) {
-      using MemoryStream ms = GetPrefixedSerialStream(o);
+      using var ms = GetPrefixedSerialStream(o);
       byte[] buf = new byte[ms.Length];
       ms.Read(buf, 0, Convert.ToInt32(ms.Length));
       return buf;
@@ -18,7 +18,7 @@ namespace Rengex.Translator {
     // CancellationToken does nothing for NetworkStream.ReadAsync
     public static async Task<byte[]> ReadLenAsync(this Stream s, int len) {
       if (len < 0) {
-        throw new ArgumentException("len cannnot be negative");
+        throw new ArgumentException("len cannot be negative");
       }
 
       byte[] buf = new byte[len];
@@ -41,7 +41,7 @@ namespace Rengex.Translator {
     }
 
     public static async Task WriteObjAsync(this Stream stream, object obj, CancellationToken token) {
-      using MemoryStream ms = GetPrefixedSerialStream(obj);
+      using var ms = GetPrefixedSerialStream(obj);
       token.ThrowIfCancellationRequested();
       await ms.CopyToAsync(stream, 8192, token);
     }
