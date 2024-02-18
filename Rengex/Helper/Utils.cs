@@ -62,26 +62,23 @@ namespace Rengex.Helper {
     private readonly Func<bool> _canExecute;
     private readonly Action _execute;
 
-    public RelayCommand(Action execute) : this(execute, null) {
-    }
-
-    public RelayCommand(Action execute, Func<bool> canExecute) {
+    public RelayCommand(Action execute, Func<bool>? canExecute = null) {
       _execute = execute;
       _canExecute = canExecute ?? (() => true);
     }
 
-    public event EventHandler CanExecuteChanged;
+    public event EventHandler? CanExecuteChanged;
 
-    public bool CanExecute(object parameter) {
+    public bool CanExecute(object? parameter) {
       return _canExecute();
     }
 
-    public void Execute(object parameter) {
+    public void Execute(object? parameter) {
       _execute();
     }
 
     public void NotifyCanExecute() {
-      CanExecuteChanged.Invoke(null, null);
+      CanExecuteChanged?.Invoke(null, new EventArgs());
     }
   }
 
@@ -91,30 +88,17 @@ namespace Rengex.Helper {
     private readonly Action<T> _execute;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="DelegateCommand{T}"/>.
-    /// </summary>
-    /// <param name="execute">Delegate to execute when Execute is called on
-    /// the command. This can be null to just hook up a CanExecute delegate.</param>
-    /// <remarks><seealso cref="CanExecute"/> will always return true.</remarks>
-    public RelayCommand(Action<T> execute) : this(execute, null) {
-    }
-
-    /// <summary>
     /// Creates a new command.
     /// </summary>
     /// <param name="execute">The execution logic.</param>
     /// <param name="canExecute">The execution status logic.</param>
-    public RelayCommand(Action<T> execute, Predicate<T> canExecute) {
-      _execute = execute ?? throw new ArgumentNullException("execute");
+    public RelayCommand(Action<T> execute, Predicate<T>? canExecute = null) {
+      _execute = execute ?? throw new ArgumentNullException(nameof(execute));
       _canExecute = canExecute ?? (_ => true);
     }
 
     public void NotifyCanExecute() {
-      CanExecuteChanged.Invoke(null, null);
-    }
-
-    private static T NullToDefault(object parameter) {
-      return parameter == null ? default : (T)parameter;
+      CanExecuteChanged?.Invoke(null, new EventArgs());
     }
 
     #region ICommand Members
@@ -122,7 +106,7 @@ namespace Rengex.Helper {
     ///<summary>
     ///Occurs when changes occur that affect whether or not the command should execute.
     ///</summary>
-    public event EventHandler CanExecuteChanged;
+    public event EventHandler? CanExecuteChanged;
 
     ///<summary>
     ///Defines the method that determines whether the command can execute in its current state.
@@ -132,8 +116,8 @@ namespace Rengex.Helper {
     ///<returns>
     ///true if this command can be executed; otherwise, false.
     ///</returns>
-    public bool CanExecute(object parameter) {
-      return _canExecute(NullToDefault(parameter));
+    public bool CanExecute(object? parameter) {
+      return parameter is T t ? _canExecute(t) : false;
     }
 
     ///<summary>
@@ -141,8 +125,10 @@ namespace Rengex.Helper {
     ///</summary>
     ///<param name="parameter">Data used by the command. If the command does not
     ///require data to be passed, this object can be set to <see langword="null" />.</param>
-    public void Execute(object parameter) {
-      _execute(NullToDefault(parameter));
+    public void Execute(object? parameter) {
+      if (parameter is T t) {
+        _execute(t);
+      }
     }
 
     #endregion ICommand Members
@@ -150,9 +136,9 @@ namespace Rengex.Helper {
 
   public class ViewModelBase : INotifyPropertyChanged {
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
 
-    protected void NotifyChange(string name) {
+    protected void NotifyChange(string? name) {
       var ev = new PropertyChangedEventArgs(name);
       PropertyChanged?.Invoke(this, ev);
     }
@@ -160,7 +146,7 @@ namespace Rengex.Helper {
     /// <summary>
     /// It should be called only in the property setter.
     /// </summary>
-    protected void Set<T>(ref T member, T value, [CallerMemberName] string name = null) {
+    protected void Set<T>(ref T member, T value, [CallerMemberName] string? name = null) {
       if (Equals(member, value)) {
         return;
       }
