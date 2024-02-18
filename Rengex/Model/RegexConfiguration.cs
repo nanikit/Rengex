@@ -305,11 +305,9 @@ namespace Rengex.Model {
   internal class ExtendedMatcher {
     public static readonly Regex RxProcGroup = GetExtendedGroupRegex(@"<([^>\s]+?F)>");
 
-    private const RegexOptions RxoDefault
-            = RegexOptions.Compiled
-        | RegexOptions.Multiline
-        | RegexOptions.ExplicitCapture
-        | RegexOptions.IgnorePatternWhitespace;
+    private const RegexOptions RxoDefault = RegexOptions.Compiled
+      | RegexOptions.Multiline
+      | RegexOptions.IgnorePatternWhitespace;
 
     private readonly Dictionary<string, Regex> Procedures;
     private readonly Regex Root;
@@ -400,7 +398,7 @@ namespace Rengex.Model {
             yield return span;
           }
         }
-        else {
+        else if (!group.Name.All(c => char.IsDigit(c))) {
           yield return new TextSpan(
             capture.Index, capture.Length,
             capture.Value, group.Name);
