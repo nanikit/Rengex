@@ -135,8 +135,8 @@ namespace Rengex {
         }
         catch (Exception e) {
           Progress.Foreground = LabelProgressVM.FgError;
-          string msg = e is RegexMatchTimeoutException
-            ? "정규식 검색이 너무 오래 걸립니다. 정규식을 점검해주세요."
+          string msg = e is RegexMatchTimeoutException match
+            ? $"정규식 검색이 너무 오래 걸립니다. 정규식을 점검해주세요: {match.Pattern}"
             : e.Message;
           item.SetProgress(TranslationPhase.Complete, 100, msg);
           Faults.Add(item.Progress);
