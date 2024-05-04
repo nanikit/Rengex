@@ -53,11 +53,11 @@ namespace Rengex {
       dotConfig = dot;
       translations = paths?.SelectMany(p => WalkForSources(p))?.ToList();
       Progress = new LabelProgressVM();
-      Faults = new ObservableCollection<ILabelProgressVM>();
-      Ongoings = new ObservableCollection<ILabelProgressVM>();
+      Faults = [];
+      Ongoings = [];
     }
 
-    public List<Exception> Exceptions { get; private set; } = new List<Exception>();
+    public List<Exception> Exceptions { get; private set; } = [];
     public ObservableCollection<ILabelProgressVM> Faults { get; private set; }
     public ObservableCollection<ILabelProgressVM> Ongoings { get; private set; }
     public LabelProgressVM Progress { get; private set; }
@@ -149,7 +149,7 @@ namespace Rengex {
 
     private IEnumerable<TranslationUnit> WalkForSources(string path) {
       if (dotConfig == null) {
-        return Enumerable.Empty<TranslationUnit>();
+        return [];
       }
 
       return ManagedPath

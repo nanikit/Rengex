@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Rengex.Model {
-
   public class RegexConfiguration {
     private readonly MatchConfig Matcher;
     private readonly ReplaceConfig Replacer;
@@ -42,7 +41,7 @@ namespace Rengex.Model {
     private Func<string, ReplaceConfig> ConfigResolver;
 
     public ReplaceConfig() {
-      Replacers = new List<IReplacer>();
+      Replacers = [];
     }
 
     public ReplaceConfig(string replaceConfigPath) {
@@ -51,7 +50,6 @@ namespace Rengex.Model {
     }
 
     private interface IReplacer {
-
       string Postprocess(string meta, string trans);
 
       string Preprocess(string meta, string trans);
@@ -111,7 +109,6 @@ namespace Rengex.Model {
     }
 
     internal class PostprocessPattern(ReplacePattern pattern) : IReplacer {
-
       public string Postprocess(string meta, string trans) {
         if (!pattern.Extended) {
           return pattern.Original.Replace(trans, pattern.Replace);
@@ -133,7 +130,6 @@ namespace Rengex.Model {
     }
 
     internal class PreprocessPattern(ReplacePattern pattern) : IReplacer {
-
       public string Postprocess(string meta, string trans) {
         return trans;
       }
@@ -272,10 +268,11 @@ namespace Rengex.Model {
     }
   }
 
-  public record TextSpan(long Offset, long Length, string? Name, string? Value) {
-    public string? Value { get; set; } = Value;
-    public long End => Offset + Length;
-  }
+  public record TextSpan(long Offset, long Length, string? Name, string? Value)
+    {
+        public string? Value { get; set; } = Value;
+        public long End => Offset + Length;
+    }
 
   internal class ExtendedMatcher {
     public static readonly Regex RxProcGroup = GetExtendedGroupRegex(@"<([^>\s]+?F)>");

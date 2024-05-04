@@ -6,14 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Rengex.Model {
-
-  internal class Reconstructor {
-    private readonly RegexConfiguration _configuration;
-
-    public Reconstructor(RegexConfiguration configuration) {
-      _configuration = configuration;
-    }
-
+  internal class Reconstructor(RegexConfiguration configuration) {
     public async Task Extract(Stream original, TextWriter meta, TextWriter source) {
       switch (await StringWithCodePage.ReadAllTextWithDetectionAsync(original).ConfigureAwait(false)) {
       case (string text, _):
@@ -46,7 +39,7 @@ namespace Rengex.Model {
       var substitution = new SpanPairReader(source);
       foreach (var span in metaReader.GetSpans()) {
         string extracted = substitution.ReadCorrespondingSpan(span);
-        string replaced = _configuration.PreReplace(span.Name ?? "", extracted);
+        string replaced = configuration.PreReplace(span.Name ?? "", extracted);
         preprocessed.AppendLine(replaced);
       }
 
@@ -56,7 +49,7 @@ namespace Rengex.Model {
 
     private async Task<string> ApplyPostProcess(TextSpan span, CharCountingReader src, string translation) {
       string? original = await src.ReadStringAsync((int)span.Length).ConfigureAwait(false);
-      return _configuration.PostReplace(span.Name ?? "", original ?? "", translation);
+      return configuration.PostReplace(span.Name ?? "", original ?? "", translation);
     }
 
     private async Task CompileTranslation(string original, MetadataCsvReader meta, TextReader target, TextWriter result) {
@@ -94,7 +87,7 @@ namespace Rengex.Model {
         await source.WriteLineAsync(line).ConfigureAwait(false);
       }
 
-      foreach (var span in _configuration.Matches(text)) {
+      foreach (var span in configuration.Matches(text)) {
         string value = span.Value;
         string newLines = new('\n', TextUtils.CountLines(value));
 
@@ -111,13 +104,8 @@ namespace Rengex.Model {
   /// 메타 파일에 대응하는 번역문 부분을 가져오는 클래스.
   /// ReadLine을 쓰면 CR, LF, CR/LF을 구분할 수 없게 되어 수작업함.
   /// </summary>
-  internal class SpanPairReader {
+  internal class SpanPairReader(TextReader reader) {
     private readonly StringBuilder Buffer = new();
-    private readonly TextReader Reader;
-
-    public SpanPairReader(TextReader reader) {
-      Reader = reader;
-    }
 
     public string ReadCorrespondingSpan(TextSpan span) {
       int spanLineCount = TextUtils.CountLines(span.Value);
@@ -126,14 +114,14 @@ namespace Rengex.Model {
 
     private void CopyTrailingLF(bool skipBuffer) {
       if (skipBuffer) {
-        if (Reader.Peek() == '\n') {
-          _ = Reader.Read();
+        if (reader.Peek() == '\n') {
+          _ = reader.Read();
         }
       }
       else {
         _ = Buffer.Append('\r');
-        if (Reader.Peek() == '\n') {
-          _ = Reader.Read();
+        if (reader.Peek() == '\n') {
+          _ = reader.Read();
           _ = Buffer.Append('\n');
         }
       }
@@ -144,7 +132,7 @@ namespace Rengex.Model {
 
       int lineCount = 0;
       while (lineCount < n) {
-        int c = Reader.Read();
+        int c = reader.Read();
         if (c < 0) {
           throw new ApplicationException("번역파일 줄 수가 부족합니다");
         }
