@@ -388,25 +388,22 @@ namespace Rengex.Model {
     }
   }
 
-  internal class MatchConfig : IDotConfig<MatchConfig> {
+  internal class MatchConfig(ExtendedMatcher matcher, string? path) : IDotConfig<MatchConfig> {
     public static readonly string Extension = ".match.txt";
 
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
-    private readonly ExtendedMatcher Matcher;
 
-    public MatchConfig() {
-      Matcher = new ExtendedMatcher(@"(?<text>.*)", Timeout);
+    public MatchConfig() : this(@"(?<text>.*)") {
     }
 
-    public MatchConfig(string path) {
-      string pat = GetPattern(path);
-      Matcher = new ExtendedMatcher(pat, Timeout);
+    public MatchConfig(string pattern, string? path = null) : this(new ExtendedMatcher(pattern, Timeout), path) {
     }
 
     public Func<string, MatchConfig> ConfigResolver { set { } }
 
     public MatchConfig CreateFromFile(string path) {
-      return new MatchConfig(path);
+      string pattern = File.ReadAllText(path).Replace(@"\jp", TextUtils.ClassJap);
+      return new MatchConfig(pattern, path);
     }
 
     public string GetDefaultConfig() => Properties.Resources.DefaultMatch;
@@ -414,11 +411,23 @@ namespace Rengex.Model {
     public string GetExtension() => Extension;
 
     public IEnumerable<TextSpan> Matches(string input) {
-      return Matcher.Matches(input);
-    }
+      var enumerator = matcher.Matches(input).GetEnumerator();
 
-    private static string GetPattern(string path) {
-      return File.ReadAllText(path).Replace(@"\jp", TextUtils.ClassJap);
+      while (true) {
+        TextSpan span;
+        try {
+          if (!enumerator.MoveNext()) {
+            break;
+          }
+          span = enumerator.Current;
+        }
+        catch (RegexMatchTimeoutException exception) {
+          string message = $"정규식 검색이 너무 오래 걸립니다. 정규식을 점검해주세요: {Path.GetFileName(path)}";
+          throw new RengexException(message, exception);
+        }
+
+        yield return span;
+      }
     }
   }
 }
