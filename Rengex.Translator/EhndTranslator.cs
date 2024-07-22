@@ -12,7 +12,7 @@ namespace Rengex.Translator {
       if (Instance != null) {
         return;
       }
-      var path = eztransDirectory != null ? Path.Combine(eztransDirectory, Ehnd.DllName) : null;
+      string? path = eztransDirectory != null ? Path.Combine(eztransDirectory, Ehnd.DllName) : null;
       Instance = new BatchEhnd(new Ehnd(path));
     }
 

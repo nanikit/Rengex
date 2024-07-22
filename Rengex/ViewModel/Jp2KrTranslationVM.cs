@@ -10,7 +10,7 @@ using System.Management;
 using System.Threading.Tasks;
 using System.Windows.Media;
 
-namespace Rengex {
+namespace Rengex.ViewModel {
 
   public class Jp2KrDesignVM : Jp2KrTranslationVM {
 

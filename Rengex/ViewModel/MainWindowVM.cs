@@ -10,7 +10,7 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 
-namespace Rengex.View {
+namespace Rengex.ViewModel {
 
   public enum Operation {
     None, Import, Translate, Export, OneStop

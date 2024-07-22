@@ -1,5 +1,6 @@
 namespace Rengex.View {
 
+  using Rengex.ViewModel;
   using System;
   using System.Linq;
   using System.Text;

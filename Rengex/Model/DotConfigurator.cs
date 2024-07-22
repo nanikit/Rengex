@@ -35,16 +35,10 @@ namespace Rengex.Model {
     string Origin { get; }
   }
 
-  internal class DebounceWatcher : IDisposable {
+  internal class DebounceWatcher(int msTimeout) : IDisposable {
     private readonly CancellationTokenSource Cancel = new();
 
     private readonly BufferBlock<FileSystemEventArgs> ChangeQueue = new();
-
-    private readonly int MsTimeout;
-
-    public DebounceWatcher(int msTimeout) {
-      MsTimeout = msTimeout;
-    }
 
     public DebounceWatcher(int msTimeout, params FileSystemWatcher[] watchers) : this(msTimeout) {
       _ = DispatchDeduplicatedEvents();
@@ -89,7 +83,7 @@ namespace Rengex.Model {
       var changes = new Dictionary<string, FileSystemEventArgs>();
       var fse = await ChangeQueue.ReceiveAsync(Cancel.Token).ConfigureAwait(false);
       changes[fse.FullPath] = fse;
-      var timeout = Task.Delay(MsTimeout);
+      var timeout = Task.Delay(msTimeout);
       while (true) {
         var fetch = ChangeQueue.ReceiveAsync(Cancel.Token);
         var fin = await Task.WhenAny(fetch, timeout).ConfigureAwait(false);
@@ -117,9 +111,9 @@ namespace Rengex.Model {
     /// </summary>
     private readonly DebounceWatcher DebounceWatcher;
 
-    private readonly Dictionary<string, Region> RegionDictionary = new();
+    private readonly Dictionary<string, Region> RegionDictionary = [];
 
-    private readonly List<Region> Regions = new();
+    private readonly List<Region> Regions = [];
 
     private readonly string RootPath;
 
@@ -167,9 +161,7 @@ namespace Rengex.Model {
     private void AddRegion(string path) {
       var cfg = ConfigBuilder.CreateFromFile(path);
       cfg.ConfigResolver = ResolveConfig;
-      var region = new Region(path, cfg) {
-        Watcher = new FileSystemWatcher(Path.GetDirectoryName(path), Path.GetFileName(path))
-      };
+      var region = new Region(path, cfg);
       region.Watcher.EnableRaisingEvents = true;
       DebounceWatcher.Subscribe(region.Watcher);
       int idx = Regions.BinarySearch(region, region);
@@ -191,7 +183,7 @@ namespace Rengex.Model {
         }
         catch (Exception exception) {
           var type = WatcherChangeTypes.Created;
-          string directory = Path.GetDirectoryName(config);
+          string directory = Path.GetDirectoryName(config) ?? config;
           string name = Path.GetFileName(config);
           var eventArgs = new FileSystemEventArgs(type, directory, name);
           Faulted.Invoke(eventArgs, exception);
@@ -241,7 +233,10 @@ namespace Rengex.Model {
         break;
 
       case WatcherChangeTypes.Renamed:
-        var renameArgs = eventArgs as RenamedEventArgs;
+        if (eventArgs is not RenamedEventArgs renameArgs) {
+          throw new ApplicationException("RenameEventArgs casting failure.");
+        }
+
         RemoveRegion(renameArgs.OldFullPath);
         if (renameArgs.FullPath.EndsWith(ConfigBuilder.GetExtension())) {
           AddRegion(renameArgs.FullPath);
@@ -280,19 +275,21 @@ namespace Rengex.Model {
         Prefix = "";
         Suffix = "";
         Value = value;
+        Watcher = new FileSystemWatcher();
       }
 
       public Region(string pattern, T value) {
         Value = value;
-        Prefix = Path.GetDirectoryName(pattern).ToLower() + '\\';
+        Prefix = Path.GetDirectoryName(pattern)!.ToLower() + '\\';
         int extIdx = pattern.Length - value.GetExtension().Length;
         Suffix = Path.GetFileName(pattern.Remove(extIdx)).ToLower();
+        Watcher = new FileSystemWatcher(Path.GetDirectoryName(pattern)!, Path.GetFileName(pattern));
       }
 
       public int Priority => Prefix.Length * 1000 + Suffix.Length;
 
-      public int Compare(Region x, Region y) {
-        return -(x.Priority - y.Priority);
+      public int Compare(Region? x, Region? y) {
+        return -((x?.Priority ?? 0) - (y?.Priority ?? 0));
       }
 
       public override string ToString() => Prefix + Suffix + Value.GetExtension();
